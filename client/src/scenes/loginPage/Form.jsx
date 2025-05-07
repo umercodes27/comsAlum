@@ -204,32 +204,67 @@ const Form = () => {
                                         multiple={false}
                                         onDrop={(acceptedFiles) => {
                                             if (acceptedFiles.length > 0) {
-                                                setFieldValue("picturePath", acceptedFiles[0]);
+                                            setFieldValue("picturePath", acceptedFiles[0]);
                                             } else {
-                                                alert("Invalid file type!");
+                                            alert("Invalid file type!");
                                             }
                                         }}
-                                    >
-                                        {({ getRootProps, getInputProps }) => (
+                                        >
+                                        {({ getRootProps, getInputProps, open }) => (
                                             <Box
-                                                {...getRootProps()}
-                                                border={`2px dashed ${palette.primary.main}`}
-                                                sx={{ "&:hover": { cursor: "pointer" } }}
-                                                padding="1rem"
-                                                textAlign="center"
+                                            {...getRootProps({ className: 'dropzone', onClick: (e) => e.preventDefault() })}
+                                            border={`2px dashed ${palette.primary.main}`}
+                                            sx={{ "&:hover": { cursor: "pointer" } }}
+                                            padding="1rem"
+                                            textAlign="center"
                                             >
-                                                <input {...getInputProps()} />
-                                                {values.picturePath ? (
-                                                    <FlexBetween>
-                                                        <Typography>{values.picturePath.name}</Typography>
-                                                        <EditOutlinedIcon />
-                                                    </FlexBetween>
-                                                ) : (
-                                                    <p>Add Picture Here</p>
-                                                )}
+                                            <input {...getInputProps()} />
+
+                                            {values.picturePath ? (
+                                                <Box display="flex" flexDirection="column" alignItems="center">
+                                                <img
+                                                    src={URL.createObjectURL(values.picturePath)}
+                                                    alt="Preview"
+                                                    style={{
+                                                    width: "100px",
+                                                    height: "100px",
+                                                    objectFit: "cover",
+                                                    borderRadius: "50%",
+                                                    marginBottom: "0.5rem",
+                                                    }}
+                                                />
+                                                <Typography>{values.picturePath.name}</Typography>
+                                                <Box display="flex" gap="1rem" mt="0.5rem">
+                                                    <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setFieldValue("picturePath", "");
+                                                    }}
+                                                    >
+                                                    Delete
+                                                    </Button>
+                                                    <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        open(); // 👈 Trigger file picker manually
+                                                    }}
+                                                    >
+                                                    Change
+                                                    </Button>
+                                                </Box>
+                                                </Box>
+                                            ) : (
+                                                <Typography>Add Picture Here</Typography>
+                                            )}
                                             </Box>
                                         )}
                                     </Dropzone>
+
+
                                     {touched.picturePath && errors.picturePath && (
                                         <Typography color="error" variant="body2">
                                             {errors.picturePath}
