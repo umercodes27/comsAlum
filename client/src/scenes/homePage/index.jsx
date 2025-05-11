@@ -1,6 +1,6 @@
 import { Box, useMediaQuery } from "@mui/material";
 import { useSelector } from "react-redux"; // Importing useSelector to access Redux store state
-import UserWidget from "components/UserImage"; // Importing UserWidget component
+import UserWidget from "scenes/widgets/UserWidget"; // Importing UserWidget component
 import Navbar from "../navbar";
 import MyPostWidget from "scenes/widgets/MyPostWidget"; // Importing MyPostWidget 
 import PostsWidget from "scenes/widgets/PostsWidget"; // Importing PostsWidget component
@@ -20,7 +20,7 @@ const HomePage = () => {
         width="100%"
         padding="2rem 6%"
         display={isNonMobileScreens ? "flex" : "block"} // Use flexbox for non-mobile screens
-        gap="2rem"
+        gap="0.5rem"
         justifyContent="space-between"
       >
         <Box 
@@ -38,9 +38,9 @@ const HomePage = () => {
         
         {isNonMobileScreens && <Box flexBasis="26%">
           <AdvertWidget /> {/* Advert widget component */}
-          </Box>}  {/* Advert widget for non-mobile screens */}
           <Box m="2rem 0" /> {/* Margin for spacing */}
           <FriendListWidget userId={_id} picturePath={picturePath} /> {/* Friend list widget component */}
+          </Box>}  {/* Advert widget for non-mobile screens */}
     </Box>
     </Box>
   );
