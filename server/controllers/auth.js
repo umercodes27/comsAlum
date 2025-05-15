@@ -45,8 +45,9 @@ export const register = async (req, res) => {
 
         // Handle file upload
         const picturePath = req.file 
-            ? req.file.path.replace(/\\/g, "/") // Normalize path
-            : "public/assets/default-profile.png";
+            ? req.file.path.fileName // Assuming req.file.path.fileName is the correct path
+            // : req.file.path // Adjust this if your file upload middleware saves the file differently
+            : "default-profile.png";
 
         // Create new user (password will be hashed by pre-save hook)
         const newUser = new User({

@@ -13,7 +13,7 @@ const LoginPage = () => {
                   fontSize="32px"
                   color="primary"
                 >
-                  Sociopedia
+                  comsAlum
                 </Typography>
       </Box>
 
@@ -30,7 +30,7 @@ const LoginPage = () => {
           sx={{
             mb: "1.5rem",
           }}>
-          Welcome to Sociopedia, the Social Media for Sociopaths!
+          Welcome to comsAlum, the Social Media for worthy Alumnus!
           </Typography>
         <Form /> {/* Rendering the Form component for login functionality */}
       </Box>

@@ -1,4 +1,4 @@
-import {Box} from "@mui/material";
+import { Box } from "@mui/material";
 
 const UserImage = ({ image, size = "60px" }) => {
   return (
@@ -7,15 +7,14 @@ const UserImage = ({ image, size = "60px" }) => {
         style={{
           objectFit: "cover",
           borderRadius: "50%",
-          width: "size",
-          height: "size",
+          width: size,      // ✅ use the actual prop
+          height: size,     // ✅ use the actual prop
         }}
         alt="user"
         src={`http://localhost:3001/assets/${image}`}
       />
     </Box>
   );
-}
+};
 
-export default UserImage; // UserImage.jsx
-// This component is used to display a user's image in a circular format.
+export default UserImage;
