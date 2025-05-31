@@ -2,6 +2,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import validator from 'validator';
+import { sendWelcomeEmail } from '../utils/email.js';
+
 
 // Register User
 export const register = async (req, res) => {
@@ -64,6 +66,14 @@ export const register = async (req, res) => {
         });
 
         const savedUser = await newUser.save();
+        //alert("User registered successfully");
+
+        // Email notification
+        try {
+            await sendWelcomeEmail(email, firstName);
+        } catch (emailErr) {
+            console.warn("⚠️ Email send failed:", emailErr.message);
+        }
         
         // Remove password from response
         const userResponse = savedUser.toObject();

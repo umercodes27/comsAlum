@@ -1,4 +1,3 @@
-// 📁 client/src/scenes/chat/ChatPage.jsx (updated to use real users)
 import React, { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
@@ -69,13 +68,34 @@ const ChatPage = () => {
   }, [activeChat]);
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      {/* Sidebar with real user list */}
-      <div style={{ width: '25%', borderRight: '1px solid #ccc', padding: '1rem' }}>
+    <div
+      style={{
+        display: 'flex',
+        height: '100%',
+        width: '100%',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '0.85rem',
+      }}
+    >
+      {/* User List Sidebar */}
+      <div
+        style={{
+          width: '35%',
+          borderRight: '1px solid #ccc',
+          padding: '0.5rem',
+          overflowY: 'auto',
+        }}
+      >
         {users.map((user) => (
           <div
             key={user._id}
-            style={{ cursor: 'pointer', marginBottom: '1rem' }}
+            style={{
+              cursor: 'pointer',
+              marginBottom: '0.4rem',
+              padding: '0.3rem',
+              backgroundColor: activeChat?._id === user._id ? '#f0f0f0' : 'transparent',
+              borderRadius: '4px',
+            }}
             onClick={() => {
               setActiveChat(user);
               fetchMessages(user._id);
@@ -86,24 +106,63 @@ const ChatPage = () => {
         ))}
       </div>
 
-      {/* Chat Box */}
-      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', padding: '1rem' }}>
-        <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: '1rem' }}>
-          {messages.map((msg, i) => (
-            <div key={i} style={{ marginBottom: '0.5rem' }}>
-              <strong>{msg.sender === _id ? 'Me' : 'Them'}:</strong> {msg.content}
-            </div>
-          ))}
+      {/* Chat Area */}
+      <div
+        style={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '0.5rem',
+        }}
+      >
+        {/* Message Area */}
+        <div
+          style={{
+            flexGrow: 1,
+            overflowY: 'auto',
+            marginBottom: '0.5rem',
+            paddingRight: '0.2rem',
+          }}
+        >
+          {activeChat ? (
+            messages.map((msg, i) => (
+              <div key={i} style={{ marginBottom: '0.3rem' }}>
+                <strong>{msg.sender === _id ? 'Me' : activeChat.firstName}:</strong>{' '}
+                {msg.content}
+              </div>
+            ))
+          ) : (
+            <div style={{ color: '#999' }}>Select a user to start chatting</div>
+          )}
         </div>
+
+        {/* Input Box */}
         <div style={{ display: 'flex' }}>
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            style={{ flexGrow: 1, padding: '0.5rem' }}
+            style={{
+              flexGrow: 1,
+              padding: '0.4rem',
+              border: '1px solid #ccc',
+              borderRadius: '4px 0 0 4px',
+              outline: 'none',
+            }}
             placeholder="Type a message..."
           />
-          <button onClick={handleSend} style={{ padding: '0.5rem 1rem' }}>
+          <button
+            onClick={handleSend}
+            style={{
+              padding: '0.4rem 0.8rem',
+              border: '1px solid #ccc',
+              borderLeft: 'none',
+              borderRadius: '0 4px 4px 0',
+              backgroundColor: '#1976d2',
+              color: 'white',
+              cursor: 'pointer',
+            }}
+          >
             Send
           </button>
         </div>
