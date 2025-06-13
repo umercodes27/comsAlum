@@ -57,7 +57,7 @@ import {
           onClick={() => navigate(`/profile/${userId}`)}
         >
           <FlexBetween gap="1rem">
-            <UserImage image={picturePath} />
+            <UserImage image={user.picturePath} />
             <Box>
               <Typography
                 variant="h4"

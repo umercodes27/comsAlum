@@ -12,24 +12,32 @@ export const getUser = async (req, res) => {
     }
 }
 
+
 export const getUserFriends = async (req, res) => {
     try {
-        const { id } = req.params;
-    const user = await User.findById(id);
-    const friends = await Promise.all(
-        user.friends.map((Id) => User.findById(Id))
-    );
-    const formattedFriends = friends.map(
-        ({ _id, firstName, lastName, occupation, location ,picturePath }) => {
-            return { _id, firstName, lastName, occupation, location ,picturePath };
-        }
-    );
-    res.status(200).json(formattedFriends);
-        
+      const { id } = req.params;
+
+      const user = await User.findById(id);
+      if (!user) {
+        console.log("❌ User not found for ID:", id);
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      console.log("📤 Fetching friends for:", user._id, "→", user.friends);
+
+      const friends = await Promise.all(
+        user.friends.map((fid) =>
+          User.findById(fid).select("_id firstName lastName occupation location picturePath")
+        )
+      );
+
+      res.status(200).json(friends);
     } catch (error) {
-        res.status(404).json({ message: error.message }); 
+      console.error("❌ Error in getUserFriends:", error);
+      res.status(500).json({ message: error.message });
     }
-};
+  };
+
 
 // Update
 export const addRemoveFriend = async (req, res) => {

@@ -29,7 +29,7 @@ function App() {
         </Routes>
         </ThemeProvider>
       </BrowserRouter>
-    </div>
+    </div> 
   )
 }
 

@@ -33,15 +33,22 @@ const MyPostWidget = ({ picturePath }) => {
     const mediumMain = palette.neutral.mediumMain; // Get the medium main color from the theme palette
     const medium = palette.neutral.medium; // Get the medium color from the theme palette
 
+    const resetFields = () => {
+        setPost(""); // Reset the post content state
+        setImage(null); // Reset the image state
+        setIsImage(false); // Reset the image state to false
+    }
+
     const handlePost = async () => {
         const formData = new FormData(); // Create a new FormData object to send data in a multipart/form-data format
         formData.append("userId", _id); // Append user ID to the form data
         formData.append("description", post); // Append post content to the form data
         if (image) {
             formData.append("picture", image); // Append image file to the form data if it exists
+            formData.append("picturePath", image.name);  // Append image name to the form data
             formData.append("userPicturePath", picturePath); // Append user picture path to the form data
         }
-        const response = await fetch(`${process.env.REACT_APP_SERVER_URL}/posts`, {
+        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/posts` , {
             method: "POST",
             body: formData,
             headers: { Authorization: `Bearer ${token}` },
@@ -49,6 +56,18 @@ const MyPostWidget = ({ picturePath }) => {
         const posts = await response.json(); // Parse the response as JSON
         dispatch(setPosts({ posts })); // Dispatch action to update posts in the Redux store
         resetFields(); // Reset input fields after posting
+
+        console.log("Uploading post:", {
+        userId: _id,
+        description: post,
+        image,
+        picturePath: image?.name,
+        userPicturePath: picturePath
+        });
+        console.log("Post uploaded successfully:", posts);
+        // You can add additional logic here, such as showing a success message or redirecting the user
+        
+
     };
 
     return (
@@ -69,7 +88,7 @@ const MyPostWidget = ({ picturePath }) => {
             </FlexBetween>
             {isImage && (
                 <Box
-                border={'1px solid ${medium}'}
+                border={`1px solid ${medium}`}
                 borderRadius={"5px"}
                 mt={'1rem'}
                 p={'1rem'}
@@ -158,7 +177,7 @@ const MyPostWidget = ({ picturePath }) => {
                     )} 
 
                     <Button 
-                        disabled ={!post}
+                        disabled ={!post && !image} // Disable button if post content and image are empty
                         onClick={handlePost}
                         sx={{
                             color: palette.background.alt,

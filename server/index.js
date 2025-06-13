@@ -21,6 +21,7 @@ import User from './models/User.js';
 import Post from './models/Post.js';
 import Chat from './models/Chat.js';
 import Message from './models/Message.js';
+import chatRoutes from './routes/chat.js';
 import { users, posts } from './data/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -79,6 +80,7 @@ app.post("/posts", verifyToken, upload.single("picture"), (req, res, next) => {
 app.use('/auth', authRoutes);
 app.use("/users", userRoutes);
 app.use("/posts", postRoutes);
+app.use("/chat", chatRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

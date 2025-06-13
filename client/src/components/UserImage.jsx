@@ -11,7 +11,7 @@ const UserImage = ({ image, size = "60px" }) => {
           height: size,     // ✅ use the actual prop
         }}
         alt="user"
-        src={`http://localhost:3001/assets/${image}`}
+        src={`http://localhost:3001/assets/${image || "default-profile.jpg"}`}
       />
     </Box>
   );
