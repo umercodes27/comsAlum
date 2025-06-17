@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
+import ChatPageUI from './ChatPageUI';
+import useVideoCall from './VideoCall';
 
 const socket = io(import.meta.env.VITE_SERVER_URL);
 
@@ -10,31 +12,33 @@ const ChatPage = () => {
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [lastMessages, setLastMessages] = useState({});
-  const [newMessage, setNewMessage] = useState("");
-  const [search, setSearch] = useState("");
+  const [newMessage, setNewMessage] = useState('');
+  const [search, setSearch] = useState('');
+  const [isVideoCall, setIsVideoCall] = useState(false);
+  const [videoRoom, setVideoRoom] = useState(null);
+  const [incomingCallToast, setIncomingCallToast] = useState(null); // Initialize state
+  const [pendingVideoToken, setPendingVideoToken] = useState(null); // State to store token
+  const [videoKey, setVideoKey] = useState(Date.now()); // Key to force remount for video
+  const ringtoneRef = useRef(null);
 
   const user = useSelector((state) => state.user);
   const token = useSelector((state) => state.token);
-
   const _id = user?._id;
 
   // Join socket room
   useEffect(() => {
     const joinSocketRoom = () => {
-      console.log("Joining socket room for:", _id);
-      socket.emit("join", { userId: _id });
+      socket.emit('join', { userId: _id });
     };
-
     if (_id) {
       if (socket.connected) {
         joinSocketRoom();
       } else {
-        socket.on("connect", joinSocketRoom);
+        socket.on('connect', joinSocketRoom);
       }
     }
-
     return () => {
-      socket.off("connect", joinSocketRoom);
+      socket.off('connect', joinSocketRoom);
     };
   }, [_id]);
 
@@ -42,80 +46,59 @@ const ChatPage = () => {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        console.log("Fetching friends for:", _id);
-        console.log("🪪 Sending token:", token);
-        const res = await axios.get(
-          `${import.meta.env.VITE_SERVER_URL}/users/${_id}/friends`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        console.log("✅ Fetched friends:", res.data);
+        const res = await axios.get(`${import.meta.env.VITE_SERVER_URL}/users/${_id}/friends`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setFriends(res.data);
       } catch (err) {
-        console.error("❌ Error fetching friends:", err.response?.data || err.message);
+        console.error('❌ Error fetching friends:', err);
       }
     };
-
-
-    if (_id && token){
-      console.log("ChatPage token:", token);
-      console.log("ChatPage _id:", _id);
+    if (_id && token) {
       fetchFriends();
     }
-    else {
-      console.warn("🚫 Skipping fetchFriends — missing token or _id:", { _id, token });
-    }
-
   }, [_id, token]);
 
-  // Fetch last messages
+  // Fetch last messages for each friend
   useEffect(() => {
     const fetchLastMessages = async () => {
-      try {
-        const promises = friends.map((friend) =>
-          axios.get(`${import.meta.env.VITE_SERVER_URL}/chat/last-message`, {
-            params: { sender: _id, receiver: friend._id },
-            headers: { Authorization: `Bearer ${token}` },
-          })
-        );
-        const results = await Promise.allSettled(promises);
-        const previews = {};
-        results.forEach((result, i) => {
-          if (result.status === "fulfilled") {
-            previews[friends[i]._id] = result.value?.data?.content || "No messages yet.";
-          } else {
-            // Optional: log errors or fallback
-            console.warn(`No message found for ${friends[i]._id}`);
-            previews[friends[i]._id] = "No messages yet.";
-          }
-        });
-        setLastMessages(previews);
-        console.log("Last messages fetched:", previews);
-      } catch (err) {
-        console.error("Error fetching last messages:", err);
-      }
+      const promises = friends.map((friend) =>
+        axios.get(`${import.meta.env.VITE_SERVER_URL}/chat/last-message`, {
+          params: { sender: _id, receiver: friend._id },
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      );
+      const results = await Promise.allSettled(promises);
+      const previews = {};
+      results.forEach((result, i) => {
+        previews[friends[i]._id] =
+          result.status === 'fulfilled' ? result.value?.data?.content || 'No messages yet.' : 'No messages yet.';
+      });
+      setLastMessages(previews);
     };
-
     if (friends.length > 0) fetchLastMessages();
   }, [friends]);
 
-
+  // Fetch messages for a specific friend
   const fetchMessages = async (receiverId) => {
     try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_SERVER_URL}/chat/messages`,
-        {
-          params: { sender: _id, receiver: receiverId },
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await axios.get(`${import.meta.env.VITE_SERVER_URL}/chat/messages`, {
+        params: { sender: _id, receiver: receiverId },
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setMessages(res.data);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching messages:', err);
     }
   };
 
+  // Handle friend selection
+  const handleSelectFriend = (friend) => {
+    setActiveChat(friend);
+    fetchMessages(friend._id);
+  };
+
+  // Handle sending a new message
   const handleSend = () => {
     if (!newMessage || !activeChat) return;
     const messageData = {
@@ -123,17 +106,18 @@ const ChatPage = () => {
       receiver: activeChat._id,
       content: newMessage,
     };
-    socket.emit("send_message", messageData);
+    socket.emit('send_message', messageData);
     setMessages([...messages, { ...messageData, createdAt: new Date() }]);
-    setNewMessage("");
+    setNewMessage('');
     setLastMessages((prev) => ({
       ...prev,
-      [activeChat._id]: newMessage,
+      [activeChat._id]: messageData.content,
     }));
   };
 
+  // Listen for incoming messages
   useEffect(() => {
-    socket.on("receive_message", (msg) => {
+    const receiveMessage = (msg) => {
       if (msg.sender === activeChat?._id || msg.receiver === activeChat?._id) {
         setMessages((prev) => [...prev, msg]);
       }
@@ -141,143 +125,92 @@ const ChatPage = () => {
         ...prev,
         [msg.sender === _id ? msg.receiver : msg.sender]: msg.content,
       }));
-    });
-
-    return () => socket.off("receive_message");
+    };
+    socket.on('receive_message', receiveMessage);
+    return () => socket.off('receive_message', receiveMessage);
   }, [activeChat]);
 
-  const filteredFriends = friends.filter((f) =>
-    `${f.firstName} ${f.lastName}`.toLowerCase().includes(search.toLowerCase())
-  );
+  // Handle video calls
+  const video = useVideoCall({
+    activeChat,
+    token,
+    socket,
+    onRoomJoined: setVideoRoom,
+    onCallRejected: () => setIncomingCallToast(null),
+    setIsVideoCall,
+    setPendingVideoToken, // Passing setPendingVideoToken correctly here
+    setVideoRoom,
+  });
+
+  useEffect(() => {
+    const handleIncomingCall = ({ from, roomName }) => {
+      const caller = friends.find(f => f._id === from);
+
+      ringtoneRef.current = new Audio('http://localhost:3001/assets/ringtone.mp3');
+      ringtoneRef.current.loop = true;
+      ringtoneRef.current.play().catch(err => console.error('Audio play error:', err));
+
+      setIncomingCallToast({
+        from,
+        roomName,
+        fromName: caller ? `${caller.firstName} ${caller.lastName}` : 'Unknown Caller',
+        onAccept: () => {
+          socket.emit('accept_call', { from: _id, to: from, roomName });
+          setIncomingCallToast(null);
+          ringtoneRef.current?.pause();
+          ringtoneRef.current = null;
+          video.requestVideoTokenAndJoin(roomName);
+        },
+        onReject: () => {
+          socket.emit('reject_call', { from: _id, to: from });
+          setIncomingCallToast(null);
+          ringtoneRef.current?.pause();
+          ringtoneRef.current = null;
+        },
+      });
+    };
+
+    socket.on('call_user', handleIncomingCall);
+    return () => socket.off('call_user', handleIncomingCall);
+  }, [friends, _id]);
+
+  // Initiate video call
+  const getVideoToken = () => {
+    if (!activeChat) return;
+    video.initiateCall({ from: _id, to: activeChat._id, roomName: activeChat._id });
+  };
+
+  // Use the `pendingVideoToken` state to defer the video connection until ready
+  useEffect(() => {
+    if (isVideoCall && pendingVideoToken) {
+      setTimeout(() => {
+        setVideoKey(Date.now()); // Force remount for first-time video call
+        video.joinVideoRoom(pendingVideoToken);
+        setPendingVideoToken(null); // Clear the token after use
+      }, 100); // Delay to ensure DOM is ready
+    }
+  }, [isVideoCall, pendingVideoToken]);
 
   return (
-    <div style={{ display: 'flex', height: '100%', width: '100%', fontSize: '0.85rem' }}>
-      {/* Friend Sidebar */}
-      <div style={{ width: '35%', borderRight: '1px solid #ccc', padding: '0.5rem', overflowY: 'auto' }}>
-        <input
-          type="text"
-          placeholder="Search friends..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '0.4rem',
-            marginBottom: '0.5rem',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            outline: 'none',
-          }}
-        />
-
-        {console.log("All friends:", friends)}
-        {console.log("Search value:", search)}
-
-
-        {(() => {
-          const matchedFriends = friends.filter((f) =>
-            `${f.firstName} ${f.lastName}`.toLowerCase().includes(search.toLowerCase())
-          );
-          const unmatchedFriends = friends.filter(
-            (f) => !matchedFriends.includes(f)
-          );
-          const allSortedFriends = [...matchedFriends, ...unmatchedFriends];
-
-          return allSortedFriends.length === 0 ? (
-            <div style={{ color: '#888', paddingTop: '1rem' }}>
-              No friends found.
-            </div>
-          ) : (
-            allSortedFriends.map((friend) => (
-              <div
-                key={friend._id}
-                onClick={() => {
-                  setActiveChat(friend);
-                  fetchMessages(friend._id);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginBottom: '0.5rem',
-                  padding: '0.4rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  backgroundColor: activeChat?._id === friend._id ? '#f0f0f0' : 'transparent',
-                }}
-              >
-                <img
-                  src={`${import.meta.env.VITE_SERVER_URL}/assets/${friend.picturePath || 'default-profile.jpg'}`}
-                  alt="profile"
-                  onError={(e) => (e.target.src = `${import.meta.env.VITE_SERVER_URL}/assets/default-profile.jpg`)}
-                  style={{
-                    width: '30px',
-                    height: '30px',
-                    borderRadius: '50%',
-                    marginRight: '0.6rem',
-                    objectFit: 'cover',
-                  }}
-                />
-                <div>
-                  <div style={{ fontWeight: 'bold' }}>
-                    {friend.firstName} {friend.lastName}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#666' }}>
-                    {lastMessages[friend._id] || "No messages yet."}
-                  </div>
-                </div>
-              </div>
-            ))
-          );
-        })()}
-      </div>
-
-      {/* Chat Window */}
-      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', padding: '0.5rem' }}>
-        <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: '0.5rem' }}>
-          {activeChat ? (
-            messages.map((msg, i) => (
-              <div key={i} style={{ marginBottom: '0.3rem' }}>
-                <strong>{msg.sender === _id ? 'Me' : activeChat.firstName}:</strong> {msg.content}
-              </div>
-            ))
-          ) : (
-            <div style={{ color: '#999', textAlign: 'center', marginTop: '2rem' }}>
-              Select a friend to start chatting.
-            </div>
-          )}
-        </div>
-
-        {/* Input Box */}
-        <div style={{ display: 'flex' }}>
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
-            style={{
-              flexGrow: 1,
-              padding: '0.4rem',
-              border: '1px solid #ccc',
-              borderRadius: '4px 0 0 4px',
-              outline: 'none',
-            }}
-          />
-          <button
-            onClick={handleSend}
-            style={{
-              padding: '0.4rem 0.8rem',
-              border: '1px solid #ccc',
-              borderLeft: 'none',
-              borderRadius: '0 4px 4px 0',
-              backgroundColor: '#1976d2',
-              color: 'white',
-              cursor: 'pointer',
-            }}
-          >
-            Send
-          </button>
-        </div>
-      </div>
-    </div>
+    <ChatPageUI
+      key={videoKey} // This will force remount on each new video call
+      friends={friends}
+      search={search}
+      setSearch={setSearch}
+      activeChat={activeChat}
+      setActiveChat={handleSelectFriend}
+      messages={messages}
+      newMessage={newMessage}
+      setNewMessage={setNewMessage}
+      handleSend={handleSend}
+      isVideoCall={isVideoCall}
+      leaveVideoRoom={video.leaveVideoRoom}
+      getVideoToken={getVideoToken}
+      lastMessages={lastMessages}
+      incomingCallToast={incomingCallToast}
+      onAcceptCall={incomingCallToast?.onAccept}
+      onRejectCall={incomingCallToast?.onReject}
+    />
   );
 };
 
