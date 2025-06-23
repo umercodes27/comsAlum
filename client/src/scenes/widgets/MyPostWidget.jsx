@@ -1,194 +1,263 @@
 import {
-    EditOutlined,
-    DeleteOutlined,
-    AttachFileOutlined,
-    ImageOutlined,
-    GifBoxOutlined,
-    MicOutlined,
-    MoreHorizOutlined,
-    Palette,
+  EditOutlined,
+  DeleteOutlined,
+  AttachFileOutlined,
+  ImageOutlined,
+  GifBoxOutlined,
+  MicOutlined,
 } from "@mui/icons-material";
-import { Box, Divider, IconButton, InputBase, Typography, Button, useMediaQuery } from "@mui/material";
-
+import {
+  Box,
+  Divider,
+  IconButton,
+  InputBase,
+  Typography,
+  Button,
+  useMediaQuery,
+} from "@mui/material";
 import Dropzone from "react-dropzone";
 import FlexBetween from "../../components/FlexBetween";
 import WidgetWrapper from "../../components/WidgetWrapper";
 import UserImage from "../../components/UserImage";
 import { useState } from "react";
-import { useDispatch } from "react-redux"; // Importing useDispatch to dispatch actions to the Redux store
-import { setPosts } from "../../state"; // Importing setPosts action to update posts in the Redux store
-import { useSelector } from "react-redux"; // Importing useSelector to access Redux store state
-import { useTheme } from "@mui/material/styles"; // Importing useTheme to access theme properties
+import { useDispatch, useSelector } from "react-redux";
+import { useTheme } from "@mui/material/styles";
+import { setPosts } from "../../state";
 
 const MyPostWidget = ({ picturePath }) => {
-    const dispatch = useDispatch(); // Initialize dispatch to send actions to the Redux store
-    const [isImage, setIsImage] = useState(false); // State to check if the post is an image
-    const [image, setImage] = useState(null); // State to hold the selected image
-    const [post, setPost] = useState(""); // State to hold the post content
-    const { palette } = useTheme(); // Get the theme palette for styling
-    const { _id } = useSelector((state) => state.user); // Get the user ID from the Redux store
-    const token = useSelector((state) => state.token); // Get the JWT token from the Redux store
+  const dispatch = useDispatch();
+  const [isImage, setIsImage] = useState(false);
+  const [image, setImage] = useState(null);
+  const [post, setPost] = useState("");
+  const [isClip, setIsClip] = useState(false);
+  const [clip, setClip] = useState(null);
+  const [isAttachment, setIsAttachment] = useState(false);
+  const [attachment, setAttachment] = useState(null);
+  const [isAudio, setIsAudio] = useState(false);
+  const [audio, setAudio] = useState(null);
+  const { palette } = useTheme();
+  const { _id } = useSelector((state) => state.user);
+  const token = useSelector((state) => state.token);
+  const isNonMobileScreens = useMediaQuery("(min-width: 1000px)");
+  const mediumMain = palette.neutral.mediumMain;
+  const medium = palette.neutral.medium;
 
-    const isNonMobileScreens = useMediaQuery("(min-width: 1000px)"); // Check if the screen size is non-mobile
-    const mediumMain = palette.neutral.mediumMain; // Get the medium main color from the theme palette
-    const medium = palette.neutral.medium; // Get the medium color from the theme palette
+  const resetFields = () => {
+    setPost("");
+    setImage(null);
+    setClip(null);
+    setAttachment(null);
+    setAudio(null);
+    setIsImage(false);
+    setIsClip(false);
+    setIsAttachment(false);
+    setIsAudio(false);
+  };
 
-    const resetFields = () => {
-        setPost(""); // Reset the post content state
-        setImage(null); // Reset the image state
-        setIsImage(false); // Reset the image state to false
+  const handlePost = async () => {
+    const formData = new FormData();
+    formData.append("userId", _id);
+    formData.append("description", post);
+
+    if (image) {
+      formData.append("picture", image);
+      formData.append("picturePath", image.name);
+      formData.append("userPicturePath", picturePath);
     }
 
-    const handlePost = async () => {
-        const formData = new FormData(); // Create a new FormData object to send data in a multipart/form-data format
-        formData.append("userId", _id); // Append user ID to the form data
-        formData.append("description", post); // Append post content to the form data
-        if (image) {
-            formData.append("picture", image); // Append image file to the form data if it exists
-            formData.append("picturePath", image.name);  // Append image name to the form data
-            formData.append("userPicturePath", picturePath); // Append user picture path to the form data
-        }
-        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/posts` , {
-            method: "POST",
-            body: formData,
-            headers: { Authorization: `Bearer ${token}` },
-          }); // Send a POST request to the server with the form data and authorization token          
-        const posts = await response.json(); // Parse the response as JSON
-        dispatch(setPosts({ posts })); // Dispatch action to update posts in the Redux store
-        resetFields(); // Reset input fields after posting
+    // You can also append clip, attachment, and audio here if backend supports it
 
-        console.log("Uploading post:", {
-        userId: _id,
-        description: post,
-        image,
-        picturePath: image?.name,
-        userPicturePath: picturePath
-        });
-        console.log("Post uploaded successfully:", posts);
-        // You can add additional logic here, such as showing a success message or redirecting the user
-        
+    const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/posts`, {
+      method: "POST",
+      body: formData,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const posts = await response.json();
+    dispatch(setPosts({ posts }));
+    resetFields();
+    console.log("Post uploaded successfully:", posts);
+  };
 
-    };
+  return (
+    <WidgetWrapper>
+      <FlexBetween gap="1.5rem">
+        <UserImage image={picturePath} size="60px" />
+        <InputBase
+          placeholder="What's on your mind..."
+          onChange={(e) => setPost(e.target.value)}
+          value={post}
+          sx={{
+            width: "100%",
+            backgroundColor: palette.neutral.light,
+            borderRadius: "2rem",
+            padding: "1rem 2rem",
+          }}
+        />
+      </FlexBetween>
 
-    return (
-        <WidgetWrapper>
-            <FlexBetween gap={"1.5rem"}>
-                <UserImage image={picturePath} size="60px" />
-                <InputBase
-                    placeholder="What's on your mind..."
-                    onChange={(e) => setPost(e.target.value)} // Update post content state on change
-                    value={post} // Bind input value to post state
-                    sx={{
-                        width: "100%",
-                        backgroundColor: palette.neutral.light,
-                        borderRadius: "2rem",
-                        padding: "1rem 2rem",
-                    }}
-                />
+      {/* IMAGE DROPZONE */}
+      {isImage && (
+        <FileDropzone
+          file={image}
+          setFile={setImage}
+          acceptedFiles=".jpg,.jpeg,.png"
+          label="Add Image Here"
+          medium={medium}
+          mediumMain={mediumMain}
+        />
+      )}
+
+      {/* CLIP DROPZONE */}
+      {isClip && (
+        <FileDropzone
+          file={clip}
+          setFile={setClip}
+          acceptedFiles=".mp4,.mov,.avi,.webm"
+          label="Add Video Clip Here"
+          medium={medium}
+          mediumMain={mediumMain}
+        />
+      )}
+
+      {/* ATTACHMENT DROPZONE */}
+      {isAttachment && (
+        <FileDropzone
+          file={attachment}
+          setFile={setAttachment}
+          acceptedFiles=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+          label="Add Attachment Here"
+          medium={medium}
+          mediumMain={mediumMain}
+        />
+      )}
+
+      {/* AUDIO DROPZONE */}
+      {isAudio && (
+        <FileDropzone
+          file={audio}
+          setFile={setAudio}
+          acceptedFiles=".mp3,.wav,.ogg"
+          label="Add Audio File Here"
+          medium={medium}
+          mediumMain={mediumMain}
+        />
+      )}
+
+      <Divider sx={{ margin: "1.25rem 0" }} />
+
+      <FlexBetween>
+        <FlexBetween
+          gap="0.25rem"
+          onClick={() => {
+            setIsImage(!isImage);
+            setIsClip(false);
+            setIsAttachment(false);
+            setIsAudio(false);
+          }}
+        >
+          <ImageOutlined sx={{ color: mediumMain }} />
+          <Typography sx={{ color: mediumMain, "&:hover": { cursor: "pointer", color: medium } }}>
+            Image
+          </Typography>
+        </FlexBetween>
+
+        {isNonMobileScreens && (
+          <>
+            <FlexBetween
+              gap="0.25rem"
+              onClick={() => {
+                setIsClip(!isClip);
+                setIsImage(false);
+                setIsAttachment(false);
+                setIsAudio(false);
+              }}
+            >
+              <GifBoxOutlined sx={{ color: mediumMain }} />
+              <Typography sx={{ color: mediumMain, "&:hover": { cursor: "pointer", color: medium } }}>
+                Clip
+              </Typography>
             </FlexBetween>
-            {isImage && (
-                <Box
-                border={`1px solid ${medium}`}
-                borderRadius={"5px"}
-                mt={'1rem'}
-                p={'1rem'}
-                >
-                    <Dropzone 
-                    acceptedFiles=".jpg,.jpeg,.png"
-                    multiple={false}
-                    onDrop={(acceptedFiles) => setImage(acceptedFiles[0])}>
-                        {({ getRootProps, getInputProps }) => (
-                            <FlexBetween>
-                                <Box
-                                    {...getRootProps()}
-                                    border={`2px dashed ${mediumMain}`}
-                                    p={"1rem"}
-                                    width={"100%"}
-                                    sx={{ "&:hover": { cursor: "pointer" } }}
-                                >
-                                    <input {...getInputProps()} />
-                                    {!image ? (
-                                        <p>Add Image Here</p>
-                                    ) : (
-                                        <FlexBetween>
-                                            <Typography>{image.name}</Typography>
-                                            <EditOutlined />
-                                        </FlexBetween>
-                                    )}
-                                </Box>
-                                {image && (
-                                    <IconButton
-                                        onClick={() => setImage(null)}
-                                        sx={{ width: "15%" }}
-                                    >
-                                        <DeleteOutlined />
-                                    </IconButton>
-                                )}
-                            </FlexBetween>
-                        )}
-                    </Dropzone>
-                </Box>)}
-            <Divider sx={{ margin: "1.25rem 0" }} />
 
-            <FlexBetween>
-                <FlexBetween gap={"0.25rem"} 
-                onClick={() => setIsImage(!isImage)}>
-                    <ImageOutlined sx={{ color: mediumMain }} />
-                    <Typography
-                        color={mediumMain}
-                        sx={{ "&:hover": { cursor: "pointer", color: medium } }}
-                    >
-                        Image
-                    </Typography>
-                </FlexBetween>
-                {isNonMobileScreens ? (
-                    <>
-                    <FlexBetween gap={"0.25rem"}>
-                        <GifBoxOutlined sx={{ color: mediumMain }} />
-                        <Typography
-                            color={mediumMain}
-                            sx={{ "&:hover": { cursor: "pointer", color: medium } }}
-                        >
-                            Clip
-                        </Typography>
-                    </FlexBetween>
-                    <FlexBetween gap={"0.25rem"}>
-                        <AttachFileOutlined sx={{ color: mediumMain }} />
-                        <Typography
-                            color={mediumMain}
-                            sx={{ "&:hover": { cursor: "pointer", color: medium } }}
-                        >
-                            Attachment
-                        </Typography>
-                    </FlexBetween>
-                    <FlexBetween gap={"0.25rem"}>
-                        <MicOutlined sx={{ color: mediumMain }} />
-                        <Typography
-                            color={mediumMain}
-                            sx={{ "&:hover": { cursor: "pointer", color: medium } }}
-                        >
-                            Audio
-                        </Typography>
-                    </FlexBetween>
-                    </>) : (
-                        <FlexBetween gap={"0.25rem"}>
-                            <MoreHorizOutlined sx={{ color: mediumMain }} />
-                        </FlexBetween>
-                    )} 
-
-                    <Button 
-                        disabled ={!post && !image} // Disable button if post content and image are empty
-                        onClick={handlePost}
-                        sx={{
-                            color: palette.background.alt,
-                            backgroundColor: palette.primary.main,
-                            borderRadius: "3rem"
-                        }}>
-                        Post
-                    </Button>
+            <FlexBetween
+              gap="0.25rem"
+              onClick={() => {
+                setIsAttachment(!isAttachment);
+                setIsImage(false);
+                setIsClip(false);
+                setIsAudio(false);
+              }}
+            >
+              <AttachFileOutlined sx={{ color: mediumMain }} />
+              <Typography sx={{ color: mediumMain, "&:hover": { cursor: "pointer", color: medium } }}>
+                Attachment
+              </Typography>
             </FlexBetween>
-        </WidgetWrapper>
-    )
-}
+
+            <FlexBetween
+              gap="0.25rem"
+              onClick={() => {
+                setIsAudio(!isAudio);
+                setIsImage(false);
+                setIsClip(false);
+                setIsAttachment(false);
+              }}
+            >
+              <MicOutlined sx={{ color: mediumMain }} />
+              <Typography sx={{ color: mediumMain, "&:hover": { cursor: "pointer", color: medium } }}>
+                Audio
+              </Typography>
+            </FlexBetween>
+          </>
+        )}
+
+        <Button
+          disabled={!post && !image && !clip && !attachment && !audio}
+          onClick={handlePost}
+          sx={{
+            color: palette.background.alt,
+            backgroundColor: palette.primary.main,
+            borderRadius: "3rem",
+          }}
+        >
+          Post
+        </Button>
+      </FlexBetween>
+    </WidgetWrapper>
+  );
+};
+
+// Reusable Dropzone Component
+const FileDropzone = ({ file, setFile, acceptedFiles, label, medium, mediumMain }) => (
+  <Box border={`1px solid ${medium}`} borderRadius="5px" mt="1rem" p="1rem">
+    <Dropzone acceptedFiles={acceptedFiles} multiple={false} onDrop={(files) => setFile(files[0])}>
+      {({ getRootProps, getInputProps }) => (
+        <FlexBetween>
+          <Box
+            {...getRootProps()}
+            border={`2px dashed ${mediumMain}`}
+            p="1rem"
+            width="100%"
+            sx={{ "&:hover": { cursor: "pointer" } }}
+          >
+            <input {...getInputProps()} />
+            {!file ? (
+              <p>{label}</p>
+            ) : (
+              <FlexBetween>
+                <Typography>{file.name}</Typography>
+                <EditOutlined />
+              </FlexBetween>
+            )}
+          </Box>
+          {file && (
+            <IconButton onClick={() => setFile(null)} sx={{ width: "15%" }}>
+              <DeleteOutlined />
+            </IconButton>
+          )}
+        </FlexBetween>
+      )}
+    </Dropzone>
+  </Box>
+);
 
 export default MyPostWidget;

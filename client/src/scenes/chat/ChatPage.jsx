@@ -14,10 +14,10 @@ const ChatPage = () => {
   const [lastMessages, setLastMessages] = useState({});
   const [newMessage, setNewMessage] = useState('');
   const [search, setSearch] = useState('');
-  const [isVideoCall, setIsVideoCall] = useState(false);
+  const [isVideoCall, setIsVideoCall] = useState(false);  // Define isVideoCall state here
   const [videoRoom, setVideoRoom] = useState(null);
-  const [incomingCallToast, setIncomingCallToast] = useState(null); // Initialize state
-  const [pendingVideoToken, setPendingVideoToken] = useState(null); // State to store token
+  const [incomingCallToast, setIncomingCallToast] = useState(null);
+  const [pendingVideoToken, setPendingVideoToken] = useState(null); // New state to store token
   const [videoKey, setVideoKey] = useState(Date.now()); // Key to force remount for video
   const ringtoneRef = useRef(null);
 
@@ -72,7 +72,7 @@ const ChatPage = () => {
       const previews = {};
       results.forEach((result, i) => {
         previews[friends[i]._id] =
-          result.status === 'fulfilled' ? result.value?.data?.content || 'No messages yet.' : 'No messages yet.';
+          result.status === 'fulfilled' ? result.value?.data?.content || '-' : '-- Error fetching message --';
       });
       setLastMessages(previews);
     };
@@ -137,8 +137,8 @@ const ChatPage = () => {
     socket,
     onRoomJoined: setVideoRoom,
     onCallRejected: () => setIncomingCallToast(null),
-    setIsVideoCall,
-    setPendingVideoToken, // Passing setPendingVideoToken correctly here
+    setIsVideoCall,  // Pass setIsVideoCall to update video call state
+    setPendingVideoToken,
     setVideoRoom,
   });
 

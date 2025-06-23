@@ -100,26 +100,32 @@ const ChatPageUI = ({
             ) : (
               <List dense>
                 {filteredFriends.map((friend) => (
-                  <ListItem key={friend._id} disablePadding>
+                  <ListItem
+                  sx={{ padding: '4px 4px' }}
+                  key={friend._id} disablePadding>
                     <ListItemButton
                       selected={activeChat?._id === friend._id}
                       onClick={() => setActiveChat(friend)}
                       sx={{
                         borderRadius: 2,
-                        mb: 1,
+                        mb: 0.5,
+                        padding: '4px 4px',
                         bgcolor: activeChat?._id === friend._id ? neutralDark : 'transparent',
                         '&:hover': { backgroundColor: neutralLight },
                       }}
                     >
-                      <ListItemAvatar>
+                      <ListItemAvatar
+                        sx={{ minWidth: 20, marginRight: 1 }}>
                         <Avatar
                           src={`${import.meta.env.VITE_SERVER_URL}/assets/${friend.picturePath || 'default-profile.jpg'}`}
                           alt={`${friend.firstName} ${friend.lastName}`}
+                          sx={{ width: 28, height: 28 }}
                         />
                       </ListItemAvatar>
                       <ListItemText
                         primary={<Typography fontWeight={600}>{friend.firstName} {friend.lastName}</Typography>}
-                        secondary={lastMessages[friend._id] || 'No messages yet.'}
+                        secondary={lastMessages[friend._id] || ''}
+                        sx={{ fontSize: '0.25rem', color: textPrimary }}
                       />
                     </ListItemButton>
                   </ListItem>
@@ -132,7 +138,7 @@ const ChatPageUI = ({
           <Box flexGrow={1} display="flex" flexDirection="column" height="100vh">
             {/* Header */}
             {activeChat && (
-              <Box px={2} py={1} bgcolor={neutralDark}>
+              <Box px={2} py={1} >
                 <FlexBetween>
                   <Typography fontWeight={600} fontSize="1rem" color="white">
                     {activeChat.firstName} {activeChat.lastName}
