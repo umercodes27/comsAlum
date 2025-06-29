@@ -1,4 +1,3 @@
-// src/scenes/chat/ChatPageUI.jsx
 import React, { useEffect } from 'react';
 import {
   Box,
@@ -19,7 +18,6 @@ import {
 import { Videocam, Call } from '@mui/icons-material';
 import FlexBetween from 'components/FlexBetween';
 import WidgetWrapper from 'components/WidgetWrapper';
-import VideoCallUI from './VideoCallUI';
 
 const ChatPageUI = ({
   friends,
@@ -38,6 +36,8 @@ const ChatPageUI = ({
   incomingCallToast,
   onAcceptCall,
   onRejectCall,
+  localVideoRef,
+  remoteVideoRef,
 }) => {
   const theme = useTheme();
   const neutralLight = theme.palette.neutral?.light || '#f5f5f5';
@@ -52,13 +52,16 @@ const ChatPageUI = ({
     };
   }, [isVideoCall]);
 
+  useEffect(() => {
+    console.log('Snackbar open:', !!incomingCallToast, 'Toast data:', incomingCallToast);
+  }, [incomingCallToast]);
+
   const filteredFriends = friends.filter((friend) =>
     `${friend.firstName} ${friend.lastName}`.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <>
-      {/* Incoming Call Snackbar */}
       <Snackbar
         open={!!incomingCallToast}
         onClose={onRejectCall}
@@ -67,25 +70,77 @@ const ChatPageUI = ({
         message={`📞 Incoming call from ${incomingCallToast?.fromName || 'Someone'}`}
         action={
           <Box>
-            <Button color="success" size="small" onClick={onAcceptCall}>Accept</Button>
-            <Button color="error" size="small" onClick={onRejectCall}>Reject</Button>
+            <Button color="success" size="small" onClick={onAcceptCall}>
+              Accept
+            </Button>
+            <Button color="error" size="small" onClick={onRejectCall}>
+              Reject
+            </Button>
           </Box>
         }
       />
-
-      {/* Video Call UI */}
       {isVideoCall ? (
-        <VideoCallUI activeChat={activeChat} leaveVideoRoom={leaveVideoRoom} />
+        <Box
+          position="fixed"
+          top={0}
+          left={0}
+          width="100vw"
+          height="100vh"
+          zIndex={1300}
+          bgcolor="black"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Box display="flex" gap={2} justifyContent="center" width="100%" px={2} position="relative">
+            <Box
+              sx={{
+                position: 'relative',
+                width: { xs: '100%', md: '45%' },
+                height: { xs: '40%', md: '70%' },
+                backgroundColor: '#111',
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}
+            >
+              <Box ref={localVideoRef} sx={{ width: '100%', height: '100%' }} />
+              <Box position="absolute" top={8} left={8} px={1.5} py={0.5} bgcolor="#00000099" borderRadius={1}>
+                <Typography variant="caption" color="#fff">
+                  You
+                </Typography>
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                position: 'relative',
+                width: { xs: '100%', md: '45%' },
+                height: { xs: '40%', md: '70%' },
+                backgroundColor: '#222',
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}
+            >
+              <Box ref={remoteVideoRef} sx={{ width: '100%', height: '100%' }} />
+              <Box position="absolute" top={8} left={8} px={1.5} py={0.5} bgcolor="#00000099" borderRadius={1}>
+                <Typography variant="caption" color="#fff">
+                  {activeChat?.firstName || 'Remote'}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={leaveVideoRoom}
+            sx={{ position: 'absolute', top: 20, right: 20 }}
+          >
+            Leave Call
+          </Button>
+        </Box>
       ) : (
         <Box display="flex" height="100vh" bgcolor={background} color={textPrimary}>
-          {/* Friend List */}
-          <WidgetWrapper
-            sx={{
-              width: { xs: '100%', sm: '35%' },
-              borderRight: `1px solid ${neutralDark}`,
-              overflow: 'auto',
-            }}
-          >
+          <WidgetWrapper sx={{ width: { xs: '100%', sm: '35%' }, borderRight: `1px solid ${neutralDark}`, overflow: 'auto' }}>
             <TextField
               fullWidth
               variant="outlined"
@@ -100,9 +155,7 @@ const ChatPageUI = ({
             ) : (
               <List dense>
                 {filteredFriends.map((friend) => (
-                  <ListItem
-                  sx={{ padding: '4px 4px' }}
-                  key={friend._id} disablePadding>
+                  <ListItem sx={{ padding: '4px 4px' }} key={friend._id} disablePadding>
                     <ListItemButton
                       selected={activeChat?._id === friend._id}
                       onClick={() => setActiveChat(friend)}
@@ -114,8 +167,7 @@ const ChatPageUI = ({
                         '&:hover': { backgroundColor: neutralLight },
                       }}
                     >
-                      <ListItemAvatar
-                        sx={{ minWidth: 20, marginRight: 1 }}>
+                      <ListItemAvatar sx={{ minWidth: 20, marginRight: 1 }}>
                         <Avatar
                           src={`${import.meta.env.VITE_SERVER_URL}/assets/${friend.picturePath || 'default-profile.jpg'}`}
                           alt={`${friend.firstName} ${friend.lastName}`}
@@ -133,12 +185,9 @@ const ChatPageUI = ({
               </List>
             )}
           </WidgetWrapper>
-
-          {/* Chat Section */}
           <Box flexGrow={1} display="flex" flexDirection="column" height="100vh">
-            {/* Header */}
             {activeChat && (
-              <Box px={2} py={1} >
+              <Box px={2} py={1}>
                 <FlexBetween>
                   <Typography fontWeight={600} fontSize="1rem" color="white">
                     {activeChat.firstName} {activeChat.lastName}
@@ -154,8 +203,6 @@ const ChatPageUI = ({
                 </FlexBetween>
               </Box>
             )}
-
-            {/* Messages */}
             <Box
               sx={{
                 flexGrow: 1,
@@ -190,8 +237,6 @@ const ChatPageUI = ({
                 </Typography>
               )}
             </Box>
-
-            {/* Message Input */}
             {activeChat && (
               <Box
                 display="flex"

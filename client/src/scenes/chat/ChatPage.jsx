@@ -14,35 +14,24 @@ const ChatPage = () => {
   const [lastMessages, setLastMessages] = useState({});
   const [newMessage, setNewMessage] = useState('');
   const [search, setSearch] = useState('');
-  const [isVideoCall, setIsVideoCall] = useState(false);  // Define isVideoCall state here
-  const [videoRoom, setVideoRoom] = useState(null);
+  const [isVideoCall, setIsVideoCall] = useState(false);
+  const [pendingVideoToken, setPendingVideoToken] = useState(null);
   const [incomingCallToast, setIncomingCallToast] = useState(null);
-  const [pendingVideoToken, setPendingVideoToken] = useState(null); // New state to store token
-  const [videoKey, setVideoKey] = useState(Date.now()); // Key to force remount for video
   const ringtoneRef = useRef(null);
 
   const user = useSelector((state) => state.user);
   const token = useSelector((state) => state.token);
   const _id = user?._id;
 
-  // Join socket room
   useEffect(() => {
-    const joinSocketRoom = () => {
-      socket.emit('join', { userId: _id });
-    };
+    const joinSocketRoom = () => socket.emit('join', { userId: _id });
     if (_id) {
-      if (socket.connected) {
-        joinSocketRoom();
-      } else {
-        socket.on('connect', joinSocketRoom);
-      }
+      if (socket.connected) joinSocketRoom();
+      else socket.on('connect', joinSocketRoom);
     }
-    return () => {
-      socket.off('connect', joinSocketRoom);
-    };
+    return () => socket.off('connect', joinSocketRoom);
   }, [_id]);
 
-  // Fetch friends
   useEffect(() => {
     const fetchFriends = async () => {
       try {
@@ -51,15 +40,12 @@ const ChatPage = () => {
         });
         setFriends(res.data);
       } catch (err) {
-        console.error('❌ Error fetching friends:', err);
+        console.error('Error fetching friends:', err);
       }
     };
-    if (_id && token) {
-      fetchFriends();
-    }
+    if (_id && token) fetchFriends();
   }, [_id, token]);
 
-  // Fetch last messages for each friend
   useEffect(() => {
     const fetchLastMessages = async () => {
       const promises = friends.map((friend) =>
@@ -72,14 +58,13 @@ const ChatPage = () => {
       const previews = {};
       results.forEach((result, i) => {
         previews[friends[i]._id] =
-          result.status === 'fulfilled' ? result.value?.data?.content || '-' : '-- Error fetching message --';
+          result.status === 'fulfilled' ? result.value?.data?.content || '-' : '-- Error --';
       });
       setLastMessages(previews);
     };
     if (friends.length > 0) fetchLastMessages();
-  }, [friends]);
+  }, [friends, _id, token]);
 
-  // Fetch messages for a specific friend
   const fetchMessages = async (receiverId) => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_SERVER_URL}/chat/messages`, {
@@ -92,30 +77,20 @@ const ChatPage = () => {
     }
   };
 
-  // Handle friend selection
   const handleSelectFriend = (friend) => {
     setActiveChat(friend);
     fetchMessages(friend._id);
   };
 
-  // Handle sending a new message
   const handleSend = () => {
     if (!newMessage || !activeChat) return;
-    const messageData = {
-      sender: _id,
-      receiver: activeChat._id,
-      content: newMessage,
-    };
+    const messageData = { sender: _id, receiver: activeChat._id, content: newMessage };
     socket.emit('send_message', messageData);
     setMessages([...messages, { ...messageData, createdAt: new Date() }]);
     setNewMessage('');
-    setLastMessages((prev) => ({
-      ...prev,
-      [activeChat._id]: messageData.content,
-    }));
+    setLastMessages((prev) => ({ ...prev, [activeChat._id]: messageData.content }));
   };
 
-  // Listen for incoming messages
   useEffect(() => {
     const receiveMessage = (msg) => {
       if (msg.sender === activeChat?._id || msg.receiver === activeChat?._id) {
@@ -128,40 +103,33 @@ const ChatPage = () => {
     };
     socket.on('receive_message', receiveMessage);
     return () => socket.off('receive_message', receiveMessage);
-  }, [activeChat]);
+  }, [activeChat, _id]);
 
-  // Handle video calls
-  const video = useVideoCall({
-    activeChat,
-    token,
-    socket,
-    onRoomJoined: setVideoRoom,
-    onCallRejected: () => setIncomingCallToast(null),
-    setIsVideoCall,  // Pass setIsVideoCall to update video call state
-    setPendingVideoToken,
-    setVideoRoom,
-  });
+  const video = useVideoCall({ activeChat, token, socket, setIsVideoCall, setPendingVideoToken });
 
   useEffect(() => {
     const handleIncomingCall = ({ from, roomName }) => {
-      const caller = friends.find(f => f._id === from);
-
+      console.log('Incoming call:', { from, roomName });
+      const caller = friends.find((f) => f._id === from);
       ringtoneRef.current = new Audio('http://localhost:3001/assets/ringtone.mp3');
       ringtoneRef.current.loop = true;
-      ringtoneRef.current.play().catch(err => console.error('Audio play error:', err));
-
+      ringtoneRef.current.play().catch((err) => console.error('Ringtone error:', err));
       setIncomingCallToast({
         from,
         roomName,
         fromName: caller ? `${caller.firstName} ${caller.lastName}` : 'Unknown Caller',
         onAccept: () => {
+          console.log('Accepting call:', { from, roomName });
+          setIsVideoCall(true);
           socket.emit('accept_call', { from: _id, to: from, roomName });
           setIncomingCallToast(null);
           ringtoneRef.current?.pause();
           ringtoneRef.current = null;
+          setActiveChat(caller || { _id: from });
           video.requestVideoTokenAndJoin(roomName);
         },
         onReject: () => {
+          console.log('Rejecting call:', { from });
           socket.emit('reject_call', { from: _id, to: from });
           setIncomingCallToast(null);
           ringtoneRef.current?.pause();
@@ -169,31 +137,33 @@ const ChatPage = () => {
         },
       });
     };
-
     socket.on('call_user', handleIncomingCall);
     return () => socket.off('call_user', handleIncomingCall);
-  }, [friends, _id]);
+  }, [friends, _id, video]);
 
-  // Initiate video call
   const getVideoToken = () => {
-    if (!activeChat) return;
-    video.initiateCall({ from: _id, to: activeChat._id, roomName: activeChat._id });
+    if (!activeChat) {
+      console.error('No active chat selected');
+      return;
+    }
+    setIsVideoCall(true);
+    video.initiateCall({ from: _id, to: activeChat._id, roomName: `room-${activeChat._id}-${Date.now()}` });
   };
 
-  // Use the `pendingVideoToken` state to defer the video connection until ready
   useEffect(() => {
     if (isVideoCall && pendingVideoToken) {
-      setTimeout(() => {
-        setVideoKey(Date.now()); // Force remount for first-time video call
-        video.joinVideoRoom(pendingVideoToken);
-        setPendingVideoToken(null); // Clear the token after use
-      }, 100); // Delay to ensure DOM is ready
+      console.log('Joining video room with token:', pendingVideoToken);
+      video.joinVideoRoom(pendingVideoToken, activeChat?._id);
+      setPendingVideoToken(null);
     }
-  }, [isVideoCall, pendingVideoToken]);
+  }, [isVideoCall, pendingVideoToken, video, activeChat]);
+
+  useEffect(() => {
+    console.log('incomingCallToast:', incomingCallToast);
+  }, [incomingCallToast]);
 
   return (
     <ChatPageUI
-      key={videoKey} // This will force remount on each new video call
       friends={friends}
       search={search}
       setSearch={setSearch}
@@ -208,8 +178,10 @@ const ChatPage = () => {
       getVideoToken={getVideoToken}
       lastMessages={lastMessages}
       incomingCallToast={incomingCallToast}
-      onAcceptCall={incomingCallToast?.onAccept}
-      onRejectCall={incomingCallToast?.onReject}
+      onAcceptCall={incomingCallToast ? incomingCallToast.onAccept : () => {}}
+      onRejectCall={incomingCallToast ? incomingCallToast.onReject : () => {}}
+      localVideoRef={video.localVideoRef}
+      remoteVideoRef={video.remoteVideoRef}
     />
   );
 };

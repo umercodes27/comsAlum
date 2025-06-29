@@ -1,136 +1,153 @@
-import { useEffect, useState, useRef } from 'react';
-import { connect, createLocalTracks } from 'twilio-video';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
+import { createLocalTracks, connect } from 'twilio-video';
 
 const useVideoCall = ({ activeChat, token, socket, setIsVideoCall, setPendingVideoToken }) => {
-  const [isDOMReady, setIsDOMReady] = useState(false); // Track DOM readiness
-
-  // Use refs to access video containers directly
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const roomRef = useRef(null);
+  const localTracksRef = useRef(null);
 
-  // Check if video containers are available in the DOM after component mounts
-  useEffect(() => {
-    // Checking DOM readiness once after the component mounts
-    if (localVideoRef.current && remoteVideoRef.current) {
-      setIsDOMReady(true); // DOM is ready
-      console.log('✅ DOM is ready: Video containers available');
-    } else {
-      console.warn('❌ Video containers not available yet');
-    }
-  }, []);
-
-  // Handler for when a call is accepted
-  useEffect(() => {
-    const handleCallAccepted = ({ roomName }) => {
-      requestVideoTokenAndJoin(roomName);
-    };
-
-    socket?.on('call_accepted', handleCallAccepted);
-
-    return () => {
-      socket?.off('call_accepted', handleCallAccepted);
-    };
-  }, [socket]);
-
-  // Initiate a call: Emits a request to the callee
   const initiateCall = ({ from, to, roomName }) => {
-    if (!socket) {
-      console.error('Socket is not initialized.');
-      return;
+    if (!socket?.connected) {
+      console.error('Socket not connected.');
+      return false;
     }
     socket.emit('call_user', { from, to, roomName });
+    return true;
   };
 
-  // Fetch video token and join the room (deferred until DOM is ready)
   const requestVideoTokenAndJoin = async (roomName) => {
+    if (!roomName) {
+      console.error('Error: roomName missing');
+      return;
+    }
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_SERVER_URL}/video/token`,
         { roomName },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setPendingVideoToken(response.data.token); // Store the token before joining
+      const videoToken = response.data.token;
+      console.log('Token received:', videoToken);
+      if (videoToken) setPendingVideoToken(videoToken);
     } catch (err) {
-      console.error('Error fetching video token:', err);
+      console.error('Error fetching token:', err.message);
+      setIsVideoCall(false);
     }
   };
 
-  // Join video room and attach tracks after DOM is ready
-  const joinVideoRoom = async (token) => {
-    if (!token || !isDOMReady) {
-      console.warn('❌ Cannot join video room: Token is missing or DOM is not ready.');
+  const joinVideoRoom = async (videoToken, roomName) => {
+    if (!videoToken) {
+      console.warn('No token provided');
       return;
     }
-
     try {
-      // Create local tracks (audio & video)
+      // Start camera/mic immediately
       const localTracks = await createLocalTracks({ audio: true, video: true });
+      localTracksRef.current = localTracks;
 
-      const room = await connect(token, {
-        name: activeChat?._id || 'defaultRoom',
+      const room = await connect(videoToken, {
+        name: roomName || activeChat?._id || `room-${Date.now()}`,
         tracks: localTracks,
       });
+      roomRef.current = room;
 
-      setIsVideoCall(true);
-      attachTracks(room, localTracks);
+      // Attach tracks once DOM is ready
+      const attachTracks = () => {
+        if (!localVideoRef.current || !remoteVideoRef.current) {
+          console.warn('DOM not ready, retrying in 500ms...');
+          return false;
+        }
+        const localVideoTrack = localTracks.find((t) => t.kind === 'video');
+        if (localVideoTrack) {
+          const localEl = localVideoTrack.attach();
+          localEl.style.width = '100%';
+          localEl.style.height = '100%';
+          localEl.style.objectFit = 'cover';
+          localVideoRef.current.replaceChildren(localEl);
+        }
+        room.participants.forEach((participant) => {
+          participant.tracks.forEach((publication) => {
+            if (publication.track?.kind === 'video') {
+              const remoteEl = publication.track.attach();
+              remoteEl.style.width = '100%';
+              remoteEl.style.height = '100%';
+              remoteEl.style.objectFit = 'cover';
+              remoteVideoRef.current.replaceChildren(remoteEl);
+            }
+          });
+        });
+        return true;
+      };
+
+      // Retry attaching tracks
+      let attempts = 0;
+      const maxAttempts = 10;
+      while (attempts < maxAttempts) {
+        if (attachTracks()) break;
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        attempts++;
+        console.log(`Attach attempt ${attempts + 1}: localVideoRef=${!!localVideoRef.current}, remoteVideoRef=${!!remoteVideoRef.current}`);
+      }
+      if (attempts >= maxAttempts) {
+        console.error('Failed to attach tracks: DOM not ready after retries');
+        leaveVideoRoom();
+        return;
+      }
+
+      room.on('participantConnected', (participant) => {
+        participant.on('trackSubscribed', (track) => {
+          if (track.kind === 'video' && remoteVideoRef.current) {
+            const remoteEl = track.attach();
+            remoteEl.style.width = '100%';
+            remoteEl.style.height = '100%';
+            remoteEl.style.objectFit = 'cover';
+            remoteVideoRef.current.replaceChildren(remoteEl);
+          }
+        });
+        participant.on('trackUnsubscribed', () => {
+          if (remoteVideoRef.current) remoteVideoRef.current.replaceChildren();
+        });
+      });
+
+      room.on('participantDisconnected', () => {
+        if (remoteVideoRef.current) remoteVideoRef.current.replaceChildren();
+      });
     } catch (error) {
-      console.error('❌ Error joining Twilio room:', error);
+      console.error('Error joining room:', error.code, error.message);
+      leaveVideoRoom();
     }
   };
 
-  // Attach local and remote video tracks to the DOM
-  const attachTracks = (room, localTracks) => {
-    if (!localVideoRef.current || !remoteVideoRef.current) {
-      console.warn('❌ Video containers not available yet. Deferring video attachment...');
-      return;
-    }
-
-    const localEl = localTracks.find(t => t.kind === 'video')?.attach();
-    if (localEl && localVideoRef.current) {
-      localEl.style.width = '100%';
-      localEl.style.height = '100%';
-      localEl.style.objectFit = 'cover';
-      localVideoRef.current.replaceChildren(localEl);
-    }
-
-    room.participants.forEach((participant) => {
-      participant.tracks.forEach((publication) => {
-        if (publication.track.kind === 'video') {
-          const remoteEl = publication.track.attach();
-          if (remoteVideoRef.current) {
-            remoteEl.style.width = '100%';
-            remoteEl.style.height = '100%';
-            remoteEl.style.objectFit = 'cover';
-            remoteVideoRef.current.replaceChildren(remoteEl);
-          }
-        }
-      });
-    });
-
-    room.on('participantConnected', (participant) => {
-      participant.on('trackSubscribed', (track) => {
-        if (track.kind === 'video') {
-          const remoteEl = track.attach();
-          if (remoteVideoRef.current) {
-            remoteEl.style.width = '100%';
-            remoteEl.style.height = '100%';
-            remoteEl.style.objectFit = 'cover';
-            remoteVideoRef.current.replaceChildren(remoteEl);
-          }
-        }
-      });
-    });
-  };
-
-  // Leave the video room and cleanup
   const leaveVideoRoom = () => {
+    if (roomRef.current) {
+      roomRef.current.disconnect();
+      roomRef.current = null;
+    }
+    if (localTracksRef.current) {
+      localTracksRef.current.forEach((track) => track.stop());
+      localTracksRef.current = null;
+    }
     if (localVideoRef.current) localVideoRef.current.replaceChildren();
     if (remoteVideoRef.current) remoteVideoRef.current.replaceChildren();
     setIsVideoCall(false);
+    setPendingVideoToken(null);
   };
 
-  return { initiateCall, requestVideoTokenAndJoin, joinVideoRoom, leaveVideoRoom };
+  useEffect(() => {
+    const handleCallAccepted = ({ roomName }) => {
+      console.log('Call accepted:', roomName);
+      if (roomName) {
+        setIsVideoCall(true);
+        requestVideoTokenAndJoin(roomName);
+      }
+    };
+    socket?.on('call_accepted', handleCallAccepted);
+    return () => socket?.off('call_accepted', handleCallAccepted);
+  }, [socket]);
+
+  return { initiateCall, requestVideoTokenAndJoin, joinVideoRoom, leaveVideoRoom, localVideoRef, remoteVideoRef };
 };
 
 export default useVideoCall;
