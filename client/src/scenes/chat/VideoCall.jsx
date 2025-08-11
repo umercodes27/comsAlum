@@ -37,13 +37,32 @@ const useVideoCall = ({ activeChat, token, socket, setIsVideoCall, setPendingVid
     }
   };
 
+  const createLabeledContainer = (videoEl, labelText) => {
+    const container = document.createElement('div');
+    container.style.position = 'relative';
+
+    const label = document.createElement('span');
+    label.textContent = labelText;
+    label.style.position = 'absolute';
+    label.style.bottom = '5px';
+    label.style.left = '5px';
+    label.style.background = 'rgba(0,0,0,0.6)';
+    label.style.color = '#fff';
+    label.style.padding = '2px 6px';
+    label.style.borderRadius = '4px';
+    label.style.fontSize = '12px';
+
+    container.appendChild(videoEl);
+    container.appendChild(label);
+    return container;
+  };
+
   const joinVideoRoom = async (videoToken, roomName) => {
     if (!videoToken) {
       console.warn('No token provided');
       return;
     }
     try {
-      // Start camera/mic immediately
       const localTracks = await createLocalTracks({ audio: true, video: true });
       localTracksRef.current = localTracks;
 
@@ -53,20 +72,25 @@ const useVideoCall = ({ activeChat, token, socket, setIsVideoCall, setPendingVid
       });
       roomRef.current = room;
 
-      // Attach tracks once DOM is ready
       const attachTracks = () => {
         if (!localVideoRef.current || !remoteVideoRef.current) {
           console.warn('DOM not ready, retrying in 500ms...');
           return false;
         }
+
+        // Local video
         const localVideoTrack = localTracks.find((t) => t.kind === 'video');
         if (localVideoTrack) {
           const localEl = localVideoTrack.attach();
           localEl.style.width = '100%';
           localEl.style.height = '100%';
           localEl.style.objectFit = 'cover';
-          localVideoRef.current.replaceChildren(localEl);
+          localVideoRef.current.replaceChildren(
+            createLabeledContainer(localEl, 'You')
+          );
         }
+
+        // Remote participants
         room.participants.forEach((participant) => {
           participant.tracks.forEach((publication) => {
             if (publication.track?.kind === 'video') {
@@ -74,21 +98,23 @@ const useVideoCall = ({ activeChat, token, socket, setIsVideoCall, setPendingVid
               remoteEl.style.width = '100%';
               remoteEl.style.height = '100%';
               remoteEl.style.objectFit = 'cover';
-              remoteVideoRef.current.replaceChildren(remoteEl);
+              remoteVideoRef.current.replaceChildren(
+                createLabeledContainer(remoteEl, participant.identity || 'Guest')
+              );
             }
           });
         });
+
         return true;
       };
 
-      // Retry attaching tracks
+      // Retry attaching until DOM ready
       let attempts = 0;
       const maxAttempts = 10;
       while (attempts < maxAttempts) {
         if (attachTracks()) break;
         await new Promise((resolve) => setTimeout(resolve, 500));
         attempts++;
-        console.log(`Attach attempt ${attempts + 1}: localVideoRef=${!!localVideoRef.current}, remoteVideoRef=${!!remoteVideoRef.current}`);
       }
       if (attempts >= maxAttempts) {
         console.error('Failed to attach tracks: DOM not ready after retries');
@@ -96,6 +122,7 @@ const useVideoCall = ({ activeChat, token, socket, setIsVideoCall, setPendingVid
         return;
       }
 
+      // New participant joins
       room.on('participantConnected', (participant) => {
         participant.on('trackSubscribed', (track) => {
           if (track.kind === 'video' && remoteVideoRef.current) {
@@ -103,7 +130,9 @@ const useVideoCall = ({ activeChat, token, socket, setIsVideoCall, setPendingVid
             remoteEl.style.width = '100%';
             remoteEl.style.height = '100%';
             remoteEl.style.objectFit = 'cover';
-            remoteVideoRef.current.replaceChildren(remoteEl);
+            remoteVideoRef.current.replaceChildren(
+              createLabeledContainer(remoteEl, participant.identity || 'Guest')
+            );
           }
         });
         participant.on('trackUnsubscribed', () => {

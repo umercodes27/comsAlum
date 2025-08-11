@@ -10,11 +10,9 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import Dropzone from "react-dropzone";
-import FlexBetween from "components/FlexBetween";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setLogin } from "state";
@@ -54,6 +52,7 @@ const Form = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+
   const theme = useTheme();
   const palette = theme.palette;
   const dispatch = useDispatch();
@@ -71,6 +70,7 @@ const Form = () => {
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
+
   const register = async (values, onSubmitProps) => {
     try {
       const formData = new FormData();
@@ -138,31 +138,32 @@ const Form = () => {
 
   return (
     <>
+      {/* Snackbar for feedback */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={4000}
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
         sx={{
-            '& .MuiSnackbarContent-root': {
-            borderRadius: '12px',
-            backgroundColor: '#fff',
-            color: '#333',
-            boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
+          "& .MuiSnackbarContent-root": {
+            borderRadius: "12px",
+            backgroundColor: "#fff",
+            color: "#333",
+            boxShadow: "0px 4px 20px rgba(0,0,0,0.1)",
             border: `1px solid ${palette.primary.light}`,
-            },
+          },
         }}
-        >
+      >
         <Alert
-            onClose={handleSnackbarClose}
-            severity={snackbarSeverity}
-            variant="filled"
-            sx={{
+          onClose={handleSnackbarClose}
+          severity={snackbarSeverity}
+          variant="filled"
+          sx={{
             width: "100%",
             borderRadius: "10px",
-            fontWeight: '500',
+            fontWeight: "500",
             backgroundColor:
-                snackbarSeverity === "success"
+              snackbarSeverity === "success"
                 ? palette.success.main
                 : snackbarSeverity === "error"
                 ? palette.error.main
@@ -170,13 +171,13 @@ const Form = () => {
                 ? palette.warning.main
                 : palette.info.main,
             color: "#fff",
-            }}
+          }}
         >
-            {snackbarMessage}
+          {snackbarMessage}
         </Alert>
-        </Snackbar>
+      </Snackbar>
 
-
+      {/* Formik for form handling */}
       <Formik
         onSubmit={handleFormSubmit}
         initialValues={isLogin ? initialValuesLogin : initialValuesRegister}
@@ -193,188 +194,213 @@ const Form = () => {
           resetForm,
           isSubmitting,
         }) => (
-          <form onSubmit={handleSubmit}>
-            <Box
-              display="grid"
-              gap="30px"
-              gridTemplateColumns="repeat(4, minmax(0, 1fr))"
-              sx={{ "& > div": { gridColumn: isNonMobileScreens ? undefined : "span 4" } }}
-            >
-              {isRegister && (
-                <>
-                  <TextField
-                    label="First Name"
-                    name="firstName"
-                    onBlur={handleBlur}
-                    onChange={handleChange}
-                    value={values.firstName}
-                    error={!!touched.firstName && !!errors.firstName}
-                    helperText={touched.firstName && errors.firstName}
-                    sx={{ gridColumn: "span 2" }}
-                  />
-                  <TextField
-                    label="Last Name"
-                    name="lastName"
-                    onBlur={handleBlur}
-                    onChange={handleChange}
-                    value={values.lastName}
-                    error={!!touched.lastName && !!errors.lastName}
-                    helperText={touched.lastName && errors.lastName}
-                    sx={{ gridColumn: "span 2" }}
-                  />
-                  <TextField
-                    label="Location"
-                    name="location"
-                    onBlur={handleBlur}
-                    onChange={handleChange}
-                    value={values.location}
-                    error={!!touched.location && !!errors.location}
-                    helperText={touched.location && errors.location}
-                    sx={{ gridColumn: "span 4" }}
-                  />
-                  <TextField
-                    label="Occupation"
-                    name="occupation"
-                    onBlur={handleBlur}
-                    onChange={handleChange}
-                    value={values.occupation}
-                    error={!!touched.occupation && !!errors.occupation}
-                    helperText={touched.occupation && errors.occupation}
-                    sx={{ gridColumn: "span 4" }}
-                  />
-                  <Box gridColumn="span 4">
-                    <Dropzone
-                      acceptedFiles=".jpg,.jpeg,.png"
-                      multiple={false}
-                      onDrop={(acceptedFiles) => setFieldValue("picturePath", acceptedFiles[0])}
-                    >
-                      {({ getRootProps, getInputProps, open }) => (
-                        <Box
-                          {...getRootProps({ className: "dropzone", onClick: (e) => e.preventDefault() })}
-                          border={`2px dashed ${palette.primary.main}`}
-                          p="1rem"
-                          textAlign="center"
-                          sx={{ cursor: "pointer" }}
-                        >
-                          <input {...getInputProps()} />
-                          {values.picturePath ? (
-                            <Box display="flex" flexDirection="column" alignItems="center">
-                              <img
-                                src={URL.createObjectURL(values.picturePath)}
-                                alt="Preview"
-                                style={{
-                                  width: "100px",
-                                  height: "100px",
-                                  objectFit: "cover",
-                                  borderRadius: "50%",
-                                  marginBottom: "0.5rem",
-                                }}
-                              />
-                              <Typography>{values.picturePath.name}</Typography>
-                              <Box display="flex" gap="1rem" mt="0.5rem">
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setFieldValue("picturePath", "");
+          <Box
+            sx={{
+              maxHeight: "calc(100vh - 64px)",
+              overflowY: "auto",
+              paddingRight: "8px",
+            }}
+          >
+            <form onSubmit={handleSubmit}>
+              <Box
+                display="grid"
+                gap="30px"
+                gridTemplateColumns="repeat(4, minmax(0, 1fr))"
+                sx={{
+                  "& > div": { gridColumn: isNonMobileScreens ? undefined : "span 4" },
+                }}
+              >
+                {isRegister && (
+                  <>
+                    <TextField
+                      label="First Name"
+                      name="firstName"
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      value={values.firstName}
+                      error={!!touched.firstName && !!errors.firstName}
+                      helperText={touched.firstName && errors.firstName}
+                      sx={{ gridColumn: "span 2" }}
+                    />
+                    <TextField
+                      label="Last Name"
+                      name="lastName"
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      value={values.lastName}
+                      error={!!touched.lastName && !!errors.lastName}
+                      helperText={touched.lastName && errors.lastName}
+                      sx={{ gridColumn: "span 2" }}
+                    />
+                    <TextField
+                      label="Location"
+                      name="location"
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      value={values.location}
+                      error={!!touched.location && !!errors.location}
+                      helperText={touched.location && errors.location}
+                      sx={{ gridColumn: "span 4" }}
+                    />
+                    <TextField
+                      label="Occupation"
+                      name="occupation"
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      value={values.occupation}
+                      error={!!touched.occupation && !!errors.occupation}
+                      helperText={touched.occupation && errors.occupation}
+                      sx={{ gridColumn: "span 4" }}
+                    />
+                    <Box gridColumn="span 4">
+                      <Dropzone
+                        acceptedFiles=".jpg,.jpeg,.png"
+                        multiple={false}
+                        onDrop={(acceptedFiles) =>
+                          setFieldValue("picturePath", acceptedFiles[0])
+                        }
+                      >
+                        {({ getRootProps, getInputProps, open }) => (
+                          <Box
+                            {...getRootProps({
+                              className: "dropzone",
+                              onClick: (e) => e.preventDefault(),
+                            })}
+                            border={`2px dashed ${palette.primary.main}`}
+                            p="1rem"
+                            textAlign="center"
+                            sx={{ cursor: "pointer" }}
+                          >
+                            <input {...getInputProps()} />
+                            {values.picturePath ? (
+                              <Box
+                                display="flex"
+                                flexDirection="column"
+                                alignItems="center"
+                              >
+                                <img
+                                  src={URL.createObjectURL(values.picturePath)}
+                                  alt="Preview"
+                                  style={{
+                                    width: "100px",
+                                    height: "100px",
+                                    objectFit: "cover",
+                                    borderRadius: "50%",
+                                    marginBottom: "0.5rem",
                                   }}
-                                >
-                                  Delete
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    open();
-                                  }}
-                                >
-                                  Change
-                                </Button>
+                                />
+                                <Typography>{values.picturePath.name}</Typography>
+                                <Box display="flex" gap="1rem" mt="0.5rem">
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFieldValue("picturePath", "");
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      open();
+                                    }}
+                                  >
+                                    Change
+                                  </Button>
+                                </Box>
                               </Box>
-                            </Box>
-                          ) : (
-                            <Typography>Add Picture Here</Typography>
-                          )}
-                        </Box>
+                            ) : (
+                              <Typography>Add Picture Here</Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Dropzone>
+                      {touched.picturePath && errors.picturePath && (
+                        <Typography color="error" variant="body2">
+                          {errors.picturePath}
+                        </Typography>
                       )}
-                    </Dropzone>
-                    {touched.picturePath && errors.picturePath && (
-                      <Typography color="error" variant="body2">
-                        {errors.picturePath}
-                      </Typography>
-                    )}
-                  </Box>
-                </>
-              )}
-              <TextField
-                label="Email"
-                name="email"
-                type="email"
-                onBlur={handleBlur}
-                onChange={handleChange}
-                value={values.email}
-                error={!!touched.email && !!errors.email}
-                helperText={touched.email && errors.email}
-                sx={{ gridColumn: "span 4" }}
-              />
-              <TextField
-                label="Password"
-                name="password"
-                type="password"
-                onBlur={handleBlur}
-                onChange={handleChange}
-                value={values.password}
-                error={!!touched.password && !!errors.password}
-                helperText={touched.password && errors.password}
-                sx={{ gridColumn: "span 4" }}
-              />
-            </Box>
-
-            <Box>
-              <Button
-                fullWidth
-                type="submit"
-                disabled={isSubmitting}
-                sx={{
-                  m: "2rem 0",
-                  p: "1rem",
-                  backgroundColor: isSubmitting ? palette.neutral.medium : palette.primary.main,
-                  color: palette.background.alt,
-                  "&:hover": {
-                    backgroundColor: palette.primary.light,
-                  },
-                }}
-              >
-                {isSubmitting ? (
-                  <CircularProgress size={24} sx={{ color: palette.background.alt }} />
-                ) : isLogin ? (
-                  "LOGIN"
-                ) : (
-                  "REGISTER"
+                    </Box>
+                  </>
                 )}
-              </Button>
-              <Typography
-                onClick={() => {
-                  setPageType(isLogin ? "register" : "login");
-                  resetForm();
-                }}
-                sx={{
-                  textDecoration: "underline",
-                  color: palette.primary.main,
-                  "&:hover": {
-                    cursor: "pointer",
-                    color: palette.primary.light,
-                  },
-                }}
-              >
-                {isLogin
-                  ? "Don't have an account? Sign Up here."
-                  : "Already have an account? Login here."}
-              </Typography>
-            </Box>
-          </form>
+
+                <TextField
+                  label="Email"
+                  name="email"
+                  type="email"
+                  onBlur={handleBlur}
+                  onChange={handleChange}
+                  value={values.email}
+                  error={!!touched.email && !!errors.email}
+                  helperText={touched.email && errors.email}
+                  sx={{ gridColumn: "span 4" }}
+                />
+                <TextField
+                  label="Password"
+                  name="password"
+                  type="password"
+                  onBlur={handleBlur}
+                  onChange={handleChange}
+                  value={values.password}
+                  error={!!touched.password && !!errors.password}
+                  helperText={touched.password && errors.password}
+                  sx={{ gridColumn: "span 4" }}
+                />
+              </Box>
+
+              <Box>
+                <Button
+                  fullWidth
+                  type="submit"
+                  disabled={isSubmitting}
+                  sx={{
+                    m: "2rem 0",
+                    p: "1rem",
+                    backgroundColor: isSubmitting
+                      ? palette.neutral.medium
+                      : palette.primary.main,
+                    color: palette.background.alt,
+                    "&:hover": {
+                      backgroundColor: palette.primary.light,
+                    },
+                  }}
+                >
+                  {isSubmitting ? (
+                    <CircularProgress
+                      size={24}
+                      sx={{ color: palette.background.alt }}
+                    />
+                  ) : isLogin ? (
+                    "LOGIN"
+                  ) : (
+                    "REGISTER"
+                  )}
+                </Button>
+                <Typography
+                  onClick={() => {
+                    setPageType(isLogin ? "register" : "login");
+                    resetForm();
+                  }}
+                  sx={{
+                    textDecoration: "underline",
+                    color: palette.primary.main,
+                    "&:hover": {
+                      cursor: "pointer",
+                      color: palette.primary.light,
+                    },
+                  }}
+                >
+                  {isLogin
+                    ? "Don't have an account? Sign Up here."
+                    : "Already have an account? Login here."}
+                </Typography>
+              </Box>
+            </form>
+          </Box>
         )}
       </Formik>
     </>

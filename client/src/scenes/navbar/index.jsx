@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   IconButton,
@@ -33,14 +33,12 @@ import ChatPage from 'scenes/chat/ChatPage';
 const Navbar = () => {
   const [isMobileMenuToggled, setIsMobileMenuToggled] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isFullChat, setIsFullChat] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [chatWidth, setChatWidth] = useState(350);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state) => state.user);
   const isNonMobileScreens = useMediaQuery("(min-width: 1000px)");
+  const isSmallScreen = useMediaQuery("(max-width: 600px)");
   const theme = useTheme();
   const neutralLight = theme.palette.neutral.light;
   const background = theme.palette.background.default;
@@ -48,27 +46,6 @@ const Navbar = () => {
   const alt = theme.palette.background.alt;
 
   const fullName = user ? `${user.firstName} ${user.lastName}` : "";
-  const minChatWidth = 300;
-  const maxChatWidth = 600;
-
-  // Resize logic
-  const handleResize = (e) => {
-    const newWidth = window.innerWidth - e.clientX - 20;
-    if (newWidth >= minChatWidth && newWidth <= maxChatWidth) {
-      setChatWidth(newWidth);
-    }
-  };
-
-  useEffect(() => {
-    if (isResizing) {
-      window.addEventListener("mousemove", handleResize);
-      window.addEventListener("mouseup", () => setIsResizing(false));
-    }
-    return () => {
-      window.removeEventListener("mousemove", handleResize);
-      window.removeEventListener("mouseup", () => setIsResizing(false));
-    };
-  }, [isResizing]);
 
   return (
     <FlexBetween padding="1rem 6%" backgroundColor={alt}>
@@ -113,11 +90,6 @@ const Navbar = () => {
               <LightMode sx={{ fontSize: "25px", color: theme.palette.neutral.dark }} />
             )}
           </IconButton>
-
-          {/* Optionally remove this if using floating bubble only */}
-          {/* <IconButton onClick={() => setIsChatOpen(true)}>
-            <Message sx={{ fontSize: "25px" }} />
-          </IconButton> */}
 
           <Notifications sx={{ fontSize: "25px" }} />
           <Settings sx={{ fontSize: "25px" }} />
@@ -234,14 +206,15 @@ const Navbar = () => {
         <Paper
           elevation={8}
           sx={{
-            width: chatWidth,
-            height: isFullChat ? '100%' : 500,
+            width: isSmallScreen ? '95%' : 550,
+            height: isSmallScreen ? '90%' : 500,
             borderRadius: 2,
             p: 2,
             backgroundColor: theme.palette.background.default,
             position: 'fixed',
-            bottom: isFullChat ? 0 : 20,
-            right: isFullChat ? 0 : 20,
+            bottom: isSmallScreen ? '50%' : 20,
+            right: isSmallScreen ? '50%' : 20,
+            transform: isSmallScreen ? 'translate(50%, 50%)' : 'none',
             display: 'flex',
             flexDirection: 'column',
             zIndex: 1301,
@@ -250,33 +223,14 @@ const Navbar = () => {
         >
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
             <Typography variant="h6">Chat</Typography>
-            <Box>
-              <IconButton onClick={() => setIsFullChat((prev) => !prev)}>
-                {isFullChat ? <Close fontSize="small" /> : <span style={{ fontSize: '1.1rem' }}>⤢</span>}
-              </IconButton>
-              <IconButton onClick={() => setIsChatOpen(false)}>
-                <Close />
-              </IconButton>
-            </Box>
+            <IconButton onClick={() => setIsChatOpen(false)}>
+              <Close />
+            </IconButton>
           </Box>
 
           <Box flexGrow={1} overflow="hidden">
             <ChatPage />
           </Box>
-
-          {/* Left-side resize handle */}
-          <Box
-            onMouseDown={() => setIsResizing(true)}
-            sx={{
-              width: '5px',
-              height: '100%',
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              cursor: 'ew-resize',
-              zIndex: 10,
-            }}
-          />
         </Paper>
       </Modal>
 

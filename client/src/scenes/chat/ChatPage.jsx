@@ -4,6 +4,8 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import ChatPageUI from './ChatPageUI';
 import useVideoCall from './VideoCall';
+import IncomingCallToast from './IncomingCallToast';
+import VideoCallScreen from './VideoCallScreen';
 
 const socket = io(import.meta.env.VITE_SERVER_URL);
 
@@ -163,27 +165,45 @@ const ChatPage = () => {
   }, [incomingCallToast]);
 
   return (
-    <ChatPageUI
-      friends={friends}
-      search={search}
-      setSearch={setSearch}
-      activeChat={activeChat}
-      setActiveChat={handleSelectFriend}
-      messages={messages}
-      newMessage={newMessage}
-      setNewMessage={setNewMessage}
-      handleSend={handleSend}
-      isVideoCall={isVideoCall}
-      leaveVideoRoom={video.leaveVideoRoom}
-      getVideoToken={getVideoToken}
-      lastMessages={lastMessages}
-      incomingCallToast={incomingCallToast}
-      onAcceptCall={incomingCallToast ? incomingCallToast.onAccept : () => {}}
-      onRejectCall={incomingCallToast ? incomingCallToast.onReject : () => {}}
-      localVideoRef={video.localVideoRef}
-      remoteVideoRef={video.remoteVideoRef}
-    />
+    <>
+      <ChatPageUI
+        friends={friends}
+        search={search}
+        setSearch={setSearch}
+        activeChat={activeChat}
+        onSelectFriend={handleSelectFriend}
+        messages={messages}
+        newMessage={newMessage}
+        setNewMessage={setNewMessage}
+        handleSend={handleSend}
+        isVideoCall={isVideoCall}
+        leaveVideoRoom={video.leaveVideoRoom}
+        getVideoToken={getVideoToken}
+        lastMessages={lastMessages}
+        incomingCallToast={incomingCallToast}
+        onAcceptCall={incomingCallToast ? incomingCallToast.onAccept : () => {}}
+        onRejectCall={incomingCallToast ? incomingCallToast.onReject : () => {}}
+        localVideoRef={video.localVideoRef}
+        remoteVideoRef={video.remoteVideoRef}
+        currentUserId={_id}
+      />
+
+      <IncomingCallToast
+        open={!!incomingCallToast}
+        callerName={incomingCallToast?.fromName}
+        onAccept={incomingCallToast ? incomingCallToast.onAccept : () => {}}
+        onReject={incomingCallToast ? incomingCallToast.onReject : () => {}}
+      />
+
+      {isVideoCall && (
+        <VideoCallScreen
+          localVideoRef={video.localVideoRef}
+          remoteVideoRef={video.remoteVideoRef}
+          onEnd={video.leaveVideoRoom}
+        />
+      )}
+    </>
   );
-};
+}
 
 export default ChatPage;

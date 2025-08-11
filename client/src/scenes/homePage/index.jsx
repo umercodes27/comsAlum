@@ -18,9 +18,9 @@ const HomePage = () => {
       <Navbar />
       <Box
         width="100%"
-        padding="2rem 6%"
+        padding="1rem 5%"
         display={isNonMobileScreens ? "flex" : "block"} // Use flexbox for non-mobile screens
-        gap="0.5rem"
+        gap="1rem"
         justifyContent="space-between"
       >
         <Box 
@@ -30,7 +30,7 @@ const HomePage = () => {
 
         <Box
           flexBasis={isNonMobileScreens ? "42%" : undefined}
-          mt = {isNonMobileScreens ? undefined : "2rem"}
+          mt = {isNonMobileScreens ? undefined : "1rem"}
           >
           <MyPostWidget picturePath={picturePath} /> {/* My post widget component */}
           <PostsWidget userId={_id} /> {/* Posts widget component */}
@@ -38,7 +38,7 @@ const HomePage = () => {
         
         {isNonMobileScreens && <Box flexBasis="26%">
           <AdvertWidget /> {/* Advert widget component */}
-          <Box m="2rem 0" /> {/* Margin for spacing */}
+          <Box m="1rem 0" /> {/* Margin for spacing */}
           <FriendListWidget userId={_id} picturePath={picturePath} /> {/* Friend list widget component */}
           </Box>}  {/* Advert widget for non-mobile screens */}
     </Box>

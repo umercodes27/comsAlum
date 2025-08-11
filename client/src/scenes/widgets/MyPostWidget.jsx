@@ -143,7 +143,7 @@ const MyPostWidget = ({ picturePath }) => {
         />
       )}
 
-      <Divider sx={{ margin: "1.25rem 0" }} />
+      <Divider sx={{ margin: "1rem 0" }} />
 
       <FlexBetween>
         <FlexBetween

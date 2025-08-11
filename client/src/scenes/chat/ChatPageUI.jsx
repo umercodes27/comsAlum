@@ -1,30 +1,16 @@
-import React, { useEffect } from 'react';
-import {
-  Box,
-  TextField,
-  Button,
-  Avatar,
-  Typography,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  ListItemButton,
-  IconButton,
-  Snackbar,
-  Slide,
-  useTheme,
-} from '@mui/material';
-import { Videocam, Call } from '@mui/icons-material';
-import FlexBetween from 'components/FlexBetween';
-import WidgetWrapper from 'components/WidgetWrapper';
+import React, { useState } from "react";
+import { Box, Typography, useMediaQuery } from "@mui/material";
+import ChatList from "./ChatList";         // your file (named ChatList)
+import ChatWindow from "./ChatWindow";
+import VideoCallScreen from "./VideoCallScreen";
+import IncomingCallToast from "./IncomingCallToast";
 
-const ChatPageUI = ({
+export default function ChatPageUI({
   friends,
   search,
   setSearch,
   activeChat,
-  setActiveChat,
+  onSelectFriend,
   messages,
   newMessage,
   setNewMessage,
@@ -38,239 +24,161 @@ const ChatPageUI = ({
   onRejectCall,
   localVideoRef,
   remoteVideoRef,
-}) => {
-  const theme = useTheme();
-  const neutralLight = theme.palette.neutral?.light || '#f5f5f5';
-  const neutralDark = theme.palette.neutral?.dark || '#333';
-  const background = theme.palette.background.default;
-  const textPrimary = theme.palette.text.primary;
+  currentUserId, // optional, pass your logged-in user's id if available
+}) {
+  const [isMaximized, setIsMaximized] = useState(false);
 
-  useEffect(() => {
-    document.body.style.overflow = isVideoCall ? 'hidden' : 'auto';
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, [isVideoCall]);
+  // mobile detection
+  const isSmallScreen = useMediaQuery("(max-width:768px)");
 
-  useEffect(() => {
-    console.log('Snackbar open:', !!incomingCallToast, 'Toast data:', incomingCallToast);
-  }, [incomingCallToast]);
+  const toggleMaximize = () => setIsMaximized((s) => !s);
 
-  const filteredFriends = friends.filter((friend) =>
-    `${friend.firstName} ${friend.lastName}`.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <>
-      <Snackbar
-        open={!!incomingCallToast}
-        onClose={onRejectCall}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        TransitionComponent={Slide}
-        message={`📞 Incoming call from ${incomingCallToast?.fromName || 'Someone'}`}
-        action={
-          <Box>
-            <Button color="success" size="small" onClick={onAcceptCall}>
-              Accept
-            </Button>
-            <Button color="error" size="small" onClick={onRejectCall}>
-              Reject
-            </Button>
-          </Box>
-        }
-      />
-      {isVideoCall ? (
-        <Box
-          position="fixed"
-          top={0}
-          left={0}
-          width="100vw"
-          height="100vh"
-          zIndex={1300}
-          bgcolor="black"
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Box display="flex" gap={2} justifyContent="center" width="100%" px={2} position="relative">
-            <Box
-              sx={{
-                position: 'relative',
-                width: { xs: '100%', md: '45%' },
-                height: { xs: '40%', md: '70%' },
-                backgroundColor: '#111',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Box ref={localVideoRef} sx={{ width: '100%', height: '100%' }} />
-              <Box position="absolute" top={8} left={8} px={1.5} py={0.5} bgcolor="#00000099" borderRadius={1}>
-                <Typography variant="caption" color="#fff">
-                  You
-                </Typography>
-              </Box>
-            </Box>
-            <Box
-              sx={{
-                position: 'relative',
-                width: { xs: '100%', md: '45%' },
-                height: { xs: '40%', md: '70%' },
-                backgroundColor: '#222',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Box ref={remoteVideoRef} sx={{ width: '100%', height: '100%' }} />
-              <Box position="absolute" top={8} left={8} px={1.5} py={0.5} bgcolor="#00000099" borderRadius={1}>
-                <Typography variant="caption" color="#fff">
-                  {activeChat?.firstName || 'Remote'}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={leaveVideoRoom}
-            sx={{ position: 'absolute', top: 20, right: 20 }}
+  // Normal (not maximized) layout:
+  // - On small screens: show ChatList (until a chat is selected), then ChatWindow
+  // - On larger screens: show both side-by-side (ChatList 30% / ChatWindow 70%)
+  if (!isMaximized) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          height: "100%",
+          width: "100%",
+          backgroundColor: "#181818",
+        }}
+      >
+        {/* Chat list: visible on left (or full width on mobile if no activeChat) */}
+        {(!activeChat || !isSmallScreen) && (
+          <Box
+            sx={{
+              width: isSmallScreen ? "100%" : "30%",
+              minWidth: 160,
+              borderRight: isSmallScreen ? "none" : "1px solid #333",
+              backgroundColor: "#101010",
+              overflow: "hidden",
+            }}
           >
-            Leave Call
-          </Button>
-        </Box>
-      ) : (
-        <Box display="flex" height="100vh" bgcolor={background} color={textPrimary}>
-          <WidgetWrapper sx={{ width: { xs: '100%', sm: '35%' }, borderRight: `1px solid ${neutralDark}`, overflow: 'auto' }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              size="small"
-              placeholder="Search friends..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              sx={{ mb: 2 }}
-            />
-            {filteredFriends.length === 0 ? (
-              <Typography color="textSecondary">No friends found.</Typography>
-            ) : (
-              <List dense>
-                {filteredFriends.map((friend) => (
-                  <ListItem sx={{ padding: '4px 4px' }} key={friend._id} disablePadding>
-                    <ListItemButton
-                      selected={activeChat?._id === friend._id}
-                      onClick={() => setActiveChat(friend)}
-                      sx={{
-                        borderRadius: 2,
-                        mb: 0.5,
-                        padding: '4px 4px',
-                        bgcolor: activeChat?._id === friend._id ? neutralDark : 'transparent',
-                        '&:hover': { backgroundColor: neutralLight },
-                      }}
-                    >
-                      <ListItemAvatar sx={{ minWidth: 20, marginRight: 1 }}>
-                        <Avatar
-                          src={`${import.meta.env.VITE_SERVER_URL}/assets/${friend.picturePath || 'default-profile.jpg'}`}
-                          alt={`${friend.firstName} ${friend.lastName}`}
-                          sx={{ width: 28, height: 28 }}
-                        />
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={<Typography fontWeight={600}>{friend.firstName} {friend.lastName}</Typography>}
-                        secondary={lastMessages[friend._id] || ''}
-                        sx={{ fontSize: '0.25rem', color: textPrimary }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </WidgetWrapper>
-          <Box flexGrow={1} display="flex" flexDirection="column" height="100vh">
-            {activeChat && (
-              <Box px={2} py={1}>
-                <FlexBetween>
-                  <Typography fontWeight={600} fontSize="1rem" color="white">
-                    {activeChat.firstName} {activeChat.lastName}
-                  </Typography>
-                  <Box>
-                    <IconButton onClick={getVideoToken} title="Start Video Call" sx={{ color: 'white' }}>
-                      <Videocam />
-                    </IconButton>
-                    <IconButton disabled title="Audio Call (Coming Soon)" sx={{ color: 'white' }}>
-                      <Call />
-                    </IconButton>
-                  </Box>
-                </FlexBetween>
-              </Box>
-            )}
-            <Box
-              sx={{
-                flexGrow: 1,
-                overflowY: 'auto',
-                px: 2,
-                py: 1,
-                backgroundColor: theme.palette.background.paper,
-                height: 'calc(100vh - 64px - 64px)',
+            <ChatList
+              friends={friends}
+              search={search}
+              setSearch={setSearch}
+              lastMessages={lastMessages}
+              onSelectFriend={(friend) => {
+                onSelectFriend(friend);
               }}
-              display="flex"
-              flexDirection="column"
-            >
-              {activeChat ? (
-                messages.map((msg, i) => (
-                  <Box
-                    key={i}
-                    maxWidth="75%"
-                    mb={1}
-                    p={1}
-                    borderRadius={2}
-                    alignSelf={msg.sender === activeChat._id ? 'flex-end' : 'flex-start'}
-                    bgcolor={msg.sender === activeChat._id ? '#bbdefb' : '#e0e0e0'}
-                  >
-                    <Typography variant="body2" color="black">
-                      <strong>{msg.sender === activeChat._id ? 'Me' : activeChat.firstName}:</strong> {msg.content}
-                    </Typography>
-                  </Box>
-                ))
-              ) : (
-                <Typography color="textSecondary" align="center" mt={8}>
-                  Select a friend to start chatting.
-                </Typography>
-              )}
-            </Box>
-            {activeChat && (
-              <Box
-                display="flex"
-                alignItems="center"
-                px={2}
-                py={1}
-                borderTop={`1px solid ${neutralDark}`}
-                bgcolor={neutralLight}
-                sx={{ position: 'sticky', bottom: 0, zIndex: 10 }}
-              >
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Type a message..."
-                  variant="outlined"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  sx={{ borderRadius: '4px 0 0 4px' }}
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleSend}
-                  disabled={!newMessage}
-                  sx={{ height: '40px', borderRadius: '0 4px 4px 0', ml: 1 }}
-                >
-                  Send
-                </Button>
-              </Box>
-            )}
+            />
           </Box>
-        </Box>
-      )}
-    </>
-  );
-};
+        )}
 
-export default ChatPageUI;
+        {/* Chat window: full width on mobile when activeChat, otherwise right column on desktop */}
+        {activeChat && (
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              minHeight: 0, // important for child flex scrolling
+            }}
+          >
+            <ChatWindow
+              activeChat={activeChat}
+              messages={messages}
+              newMessage={newMessage}
+              setNewMessage={setNewMessage}
+              onSend={handleSend}
+              onBack={() => onSelectFriend(null)}
+              getVideoToken={getVideoToken}
+              getAudioToken={() => {
+                /* implement if you have audio-call logic */
+              }}
+              toggleMaximize={toggleMaximize}
+              isMaximized={false}
+              currentUserId={currentUserId}
+            />
+          </Box>
+        )}
+      </Box>
+    );
+  }
+
+  // Maximized layout: fullscreen overlay with chat list (25%) + chat window (75%)
+  return (
+    <Box
+      sx={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        zIndex: 1400,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(0,0,0,0.45)", // dim backdrop
+        p: 2,
+      }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <Box
+        sx={{
+          width: "96%",
+          height: "96%",
+          display: "flex",
+          backgroundColor: "#0f0f0f",
+          borderRadius: 2,
+          overflow: "hidden",
+          boxShadow: 24,
+        }}
+      >
+        {/* Left: Chat list ~25% */}
+        <Box sx={{ width: "25%", minWidth: 260, borderRight: "1px solid #333", overflow: "hidden" }}>
+          <ChatList
+            friends={friends}
+            search={search}
+            setSearch={setSearch}
+            lastMessages={lastMessages}
+            onSelectFriend={(friend) => {
+              onSelectFriend(friend);
+            }}
+          />
+        </Box>
+
+        {/* Right: Chat window ~75% */}
+        <Box sx={{ flex: 1, display: "flex", minHeight: 0 }}>
+          <ChatWindow
+            activeChat={activeChat}
+            messages={messages}
+            newMessage={newMessage}
+            setNewMessage={setNewMessage}
+            onSend={handleSend}
+            onBack={() => {
+              /* In maximized mode back could close maximize or unselect */
+                <Typography
+                variant="h6"
+                color="text.secondary"
+                sx={{ textAlign: "center", width: "100%", mt: 4 }}
+                >
+                Select a friend to start chatting
+                </Typography>
+            }}
+            getVideoToken={getVideoToken}
+            getAudioToken={() => {}}
+            toggleMaximize={toggleMaximize}
+            isMaximized={true}
+            currentUserId={currentUserId}
+          />
+        </Box>
+      </Box>
+
+      {/* Incoming call toast + Video screen (rendered as separate overlays if needed) */}
+      <IncomingCallToast
+        open={!!incomingCallToast}
+        callerName={incomingCallToast?.fromName}
+        onAccept={onAcceptCall}
+        onReject={onRejectCall}
+      />
+
+      {isVideoCall && (
+        <VideoCallScreen localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} onEnd={leaveVideoRoom} />
+      )}
+    </Box>
+  );
+}
