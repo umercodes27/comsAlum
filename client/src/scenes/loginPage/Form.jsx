@@ -83,10 +83,13 @@ const Form = () => {
         }
       }
 
-      const savedUserResponse = await fetch("http://localhost:3001/auth/register", {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+
+      const savedUserResponse = await fetch(`${API_BASE_URL.replace('/api', '')}/auth/register`, {
         method: "POST",
         body: formData,
       });
+
 
       if (!savedUserResponse.ok) {
         const errorText = await savedUserResponse.text();
@@ -106,8 +109,10 @@ const Form = () => {
   };
 
   const login = async (values, onSubmitProps) => {
+    const API_BASE_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+
     try {
-      const loggedInResponse = await fetch("http://localhost:3001/auth/login", {
+      const loggedInResponse = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),

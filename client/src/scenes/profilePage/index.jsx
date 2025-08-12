@@ -15,14 +15,26 @@ const ProfilePage = () => {
   const token = useSelector((state) => state.token); // Getting the token from Redux store
   const isNonMobileScreens = useMediaQuery("(min-width: 1000px)"); // Check if the screen size is non-mobile
 
-  const getUser = async () => { // Function to fetch user data from the server
-    const response = await fetch(`http://localhost:3001/users/${userId}`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await response.json(); // Parsing the response data as JSON
-    setUser(data); // Setting the user data in state
-  }
+  const API_BASE_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+
+  const getUser = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setUser(data);
+    } catch (err) {
+      console.error("Failed to fetch user:", err);
+    }
+  };
+
 
   useEffect(() => { // Effect to fetch user data when component mounts or userId changes
     getUser(); // Fetching user data

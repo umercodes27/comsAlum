@@ -44,17 +44,21 @@ const PostWidget = ({
   const primary = palette.primary.main;
 
   const patchLike = async () => {
-    const response = await fetch(`http://localhost:3001/posts/${postId}/like`, {
+  const response = await fetch(
+    `${import.meta.env.VITE_SERVER_URL}/posts/${postId}/like`,
+    {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ userId: loggedInUserId }),
-    });
-    const updatedPost = await response.json();
-    dispatch(setPost({ post: updatedPost }));
-  };
+    }
+  );
+  const updatedPost = await response.json();
+  dispatch(setPost({ post: updatedPost }));
+};
+
 
   const handleDeletePost = async () => {
     const confirmed = window.confirm("Are you sure you want to delete this post?");
@@ -64,12 +68,16 @@ const PostWidget = ({
     dispatch(removePost({ postId }));
 
     try {
-      const response = await fetch(`http://localhost:3001/posts/${postId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SERVER_URL}/posts/${postId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -141,9 +149,10 @@ const PostWidget = ({
           height="auto"
           alt="post"
           style={{ borderRadius: "0.75rem", marginTop: "0.75rem" }}
-          src={`http://localhost:3001/assets/${picturePath}`}
+          src={`${import.meta.env.VITE_SERVER_URL}/assets/${picturePath}`}
         />
       )}
+
       <FlexBetween mt="0.25rem">
         <FlexBetween gap="1rem">
           <FlexBetween gap="0.3rem">

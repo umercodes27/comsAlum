@@ -113,7 +113,12 @@ const ChatPage = () => {
     const handleIncomingCall = ({ from, roomName }) => {
       console.log('Incoming call:', { from, roomName });
       const caller = friends.find((f) => f._id === from);
-      ringtoneRef.current = new Audio('http://localhost:3001/assets/ringtone.mp3');
+      
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+      const ASSETS_URL = API_BASE_URL.replace("/api", "/assets");
+
+      ringtoneRef.current = new Audio(`${ASSETS_URL}/ringtone.mp3`);
+
       ringtoneRef.current.loop = true;
       ringtoneRef.current.play().catch((err) => console.error('Ringtone error:', err));
       setIncomingCallToast({

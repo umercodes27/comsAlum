@@ -1,17 +1,20 @@
 import { Box } from "@mui/material";
 
 const UserImage = ({ image, size = "60px" }) => {
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+  const ASSETS_URL = API_BASE_URL.replace("/api", "/assets");
+
   return (
     <Box width={size} height={size}>
       <img
         style={{
           objectFit: "cover",
           borderRadius: "50%",
-          width: size,      // ✅ use the actual prop
-          height: size,     // ✅ use the actual prop
+          width: size,
+          height: size,
         }}
         alt="user"
-        src={`http://localhost:3001/assets/${image || "default-profile.jpg"}`}
+        src={`${ASSETS_URL}/${image || "default-profile.jpg"}`}
       />
     </Box>
   );
