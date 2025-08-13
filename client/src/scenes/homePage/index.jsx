@@ -13,7 +13,18 @@ const HomePage = () => {
 
   return (
     <Box>
-      <Navbar />
+      {/* Sticky Navbar */}
+      <Box
+        sx={{
+          position: "sticky",
+          top: 0,
+          zIndex: 1100, // ensure it's above other elements
+          backgroundColor: "background.default", // match your theme background
+        }}
+      >
+        <Navbar />
+      </Box>
+
       <Box
         width="100%"
         padding="1rem 5%"
@@ -26,7 +37,7 @@ const HomePage = () => {
           flexBasis={isNonMobileScreens ? "26%" : undefined}
           sx={{
             position: isNonMobileScreens ? "sticky" : "static",
-            top: "60px", // Adjust for Navbar height
+            top: "72px", // match navbar height
             alignSelf: "flex-start",
           }}
         >
@@ -45,11 +56,11 @@ const HomePage = () => {
         {/* Right Column - Advert (scrolls normally) + Sticky Friend List */}
         {isNonMobileScreens && (
           <Box flexBasis="26%">
-            <AdvertWidget /> {/* This scrolls away normally */}
+            <AdvertWidget /> {/* scrolls normally */}
             <Box
               sx={{
                 position: "sticky",
-                top: "60px", // Becomes sticky once it hits this point
+                top: "72px", // matches navbar height
                 alignSelf: "flex-start",
                 mt: "1rem",
               }}
