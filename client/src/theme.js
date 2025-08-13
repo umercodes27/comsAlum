@@ -1,4 +1,4 @@
-// color design tokens export
+// ===== Color design tokens =====
 export const colorTokens = {
   grey: {
     0: "#FFFFFF",
@@ -29,15 +29,14 @@ export const colorTokens = {
   },
 };
 
-
-// MUI theme settings
+// ===== MUI Theme settings =====
 export const themeSettings = (mode) => {
   return {
     palette: {
       mode: mode,
       ...(mode === "dark"
         ? {
-            // palette values for dark mode
+            // ===== Dark mode palette =====
             primary: {
               dark: colorTokens.primary[200],
               main: colorTokens.primary[500],
@@ -56,7 +55,7 @@ export const themeSettings = (mode) => {
             },
           }
         : {
-            // palette values for light mode
+            // ===== Light mode palette =====
             primary: {
               dark: colorTokens.primary[700],
               main: colorTokens.primary[500],
@@ -70,11 +69,13 @@ export const themeSettings = (mode) => {
               light: colorTokens.grey[50],
             },
             background: {
-              default: colorTokens.grey[10],
-              alt: colorTokens.grey[0],
+              default: colorTokens.grey[10],              // page background
+              alt: "rgba(255, 255, 255, 0.8)",            // semi-transparent glassy div background
             },
           }),
     },
+
+    // ===== Typography settings =====
     typography: {
       fontFamily: ["Rubik", "sans-serif"].join(","),
       fontSize: 12,
@@ -101,6 +102,23 @@ export const themeSettings = (mode) => {
       h6: {
         fontFamily: ["Rubik", "sans-serif"].join(","),
         fontSize: 14,
+      },
+    },
+
+    // ===== Component overrides =====
+    components: {
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundColor: mode === "light"
+              ? "rgba(255, 255, 255, 0.8)" // glass effect in light mode
+              : colorTokens.grey[800],
+            backdropFilter: mode === "light" ? "blur(6px)" : "none",
+            boxShadow: mode === "light"
+              ? "0 2px 10px rgba(0, 0, 0, 0.05)"
+              : "none",
+          },
+        },
       },
     },
   };

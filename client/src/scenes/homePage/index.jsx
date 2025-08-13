@@ -1,17 +1,15 @@
 import { Box, useMediaQuery } from "@mui/material";
-import { useSelector } from "react-redux"; // Importing useSelector to access Redux store state
-import UserWidget from "scenes/widgets/UserWidget"; // Importing UserWidget component
+import { useSelector } from "react-redux";
+import UserWidget from "scenes/widgets/UserWidget";
 import Navbar from "../navbar";
-import MyPostWidget from "scenes/widgets/MyPostWidget"; // Importing MyPostWidget 
-import PostsWidget from "scenes/widgets/PostsWidget"; // Importing PostsWidget component
-import AdvertWidget from "scenes/widgets/AdvertWidget"; // Importing AdvertWidget component
-import FriendListWidget from "scenes/widgets/FriendListWidget"; // Importing FriendListWidget component
-// import ad from "data/ad"; // Importing advertisement data
-import Friend from "components/Friend";
+import MyPostWidget from "scenes/widgets/MyPostWidget";
+import PostsWidget from "scenes/widgets/PostsWidget";
+import AdvertWidget from "scenes/widgets/AdvertWidget";
+import FriendListWidget from "scenes/widgets/FriendListWidget";
 
 const HomePage = () => {
-  const isNonMobileScreens = useMediaQuery("(min-width: 1000px)"); // Check if the screen size is non-mobile
-  const { _id, picturePath } = useSelector((state) => state.user); // Destructure user ID and picture path from Redux store
+  const isNonMobileScreens = useMediaQuery("(min-width: 1000px)");
+  const { _id, picturePath } = useSelector((state) => state.user);
 
   return (
     <Box>
@@ -19,32 +17,50 @@ const HomePage = () => {
       <Box
         width="100%"
         padding="1rem 5%"
-        display={isNonMobileScreens ? "flex" : "block"} // Use flexbox for non-mobile screens
+        display={isNonMobileScreens ? "flex" : "block"}
         gap="1rem"
         justifyContent="space-between"
       >
-        <Box 
-          flexBasis={isNonMobileScreens ? "26%" : undefined}>  {/* Sidebar for non-mobile screens */}
-          <UserWidget userId={_id} picturePath={picturePath} /> {/* User widget component */}
+        {/* Left Column - Sticky User Widget */}
+        <Box
+          flexBasis={isNonMobileScreens ? "26%" : undefined}
+          sx={{
+            position: isNonMobileScreens ? "sticky" : "static",
+            top: "80px", // Adjust for Navbar height
+            alignSelf: "flex-start",
+          }}
+        >
+          <UserWidget userId={_id} picturePath={picturePath} />
         </Box>
 
+        {/* Middle Column - Posts */}
         <Box
           flexBasis={isNonMobileScreens ? "42%" : undefined}
-          mt = {isNonMobileScreens ? undefined : "1rem"}
-          >
-          <MyPostWidget picturePath={picturePath} /> {/* My post widget component */}
-          <PostsWidget userId={_id} /> {/* Posts widget component */}
+          mt={isNonMobileScreens ? undefined : "1rem"}
+        >
+          <MyPostWidget picturePath={picturePath} />
+          <PostsWidget userId={_id} />
         </Box>
-        
-        {isNonMobileScreens && <Box flexBasis="26%">
-          <AdvertWidget /> {/* Advert widget component */}
-          <Box m="1rem 0" /> {/* Margin for spacing */}
-          <FriendListWidget userId={_id} picturePath={picturePath} /> {/* Friend list widget component */}
-          </Box>}  {/* Advert widget for non-mobile screens */}
-    </Box>
+
+        {/* Right Column - Advert (scrolls normally) + Sticky Friend List */}
+        {isNonMobileScreens && (
+          <Box flexBasis="26%">
+            <AdvertWidget /> {/* This scrolls away normally */}
+            <Box
+              sx={{
+                position: "sticky",
+                top: "80px", // Becomes sticky once it hits this point
+                alignSelf: "flex-start",
+                mt: "1rem",
+              }}
+            >
+              <FriendListWidget userId={_id} picturePath={picturePath} />
+            </Box>
+          </Box>
+        )}
+      </Box>
     </Box>
   );
-}
+};
 
 export default HomePage;
-// This code defines a simple React functional component called HomePage.

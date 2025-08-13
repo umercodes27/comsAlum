@@ -4,9 +4,9 @@ import { useSelector } from "react-redux"; // Importing useSelector to access Re
 import {useEffect, useState} from "react"; // Importing useEffect to perform side effects in the component
 import { useParams } from "react-router-dom"; // Importing useParams to access URL parameters
 import FriendListWidget from "scenes/widgets/FriendListWidget"; // Importing FriendListWidget component
-import UserWidget from "components/UserImage"; // Importing UserWidget component
 import MyPostWidget from "scenes/widgets/MyPostWidget"; // Importing MyPostWidget component
 import PostsWidget from "scenes/widgets/PostsWidget"; // Importing PostsWidget component
+import UserWidget from "scenes/widgets/UserWidget"; // Importing UserWidget component
 
 
 const ProfilePage = () => {

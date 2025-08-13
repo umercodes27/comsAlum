@@ -58,19 +58,27 @@ const __dirname = path.dirname(__filename);
 
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 
+// ===== File Upload Setup =====
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/assets');
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
+  destination: (_, __, cb) => cb(null, 'public/assets'),
+  filename: (_, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    // Sanitize and make URL-safe
+    let baseName = path.basename(file.originalname, ext)
+      .normalize('NFD') // split accented letters into basic + accent
+      .replace(/[\u0300-\u036f]/g, '') // remove accents
+      .replace(/[^a-zA-Z0-9]+/g, '-')  // replace non-alphanumeric with dash
+      .replace(/-+/g, '-')              // collapse multiple dashes
+      .replace(/^-|-$/g, '')            // trim leading/trailing dash
+      .toLowerCase();
+
+    cb(null, `${Date.now()}-${baseName}${ext}`);
+  }
 });
 
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }
-});
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+
 
 app.post("/auth/register", upload.single("picture"), (req, res, next) => {
   register(req, res).catch(next);
