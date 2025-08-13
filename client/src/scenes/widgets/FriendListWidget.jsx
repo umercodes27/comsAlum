@@ -45,7 +45,7 @@ const FriendListWidget = ({ userId }) => {
       >
         Friend List
       </Typography>
-      <Box display="flex" flexDirection="column" gap="1.5rem">
+      <Box display="flex" flexDirection="column" gap="1.5rem" BoxShadow="0px 2px 4px rgba(0, 0, 0, 0.1)">
         {Array.isArray(friends) && friends.length > 0 ? (
           friends.map((friend) => (
             <Friend

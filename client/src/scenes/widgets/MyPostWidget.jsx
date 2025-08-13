@@ -91,6 +91,7 @@ const MyPostWidget = ({ picturePath }) => {
             backgroundColor: palette.neutral.light,
             borderRadius: "2rem",
             padding: "1rem 2rem",
+            BoxShadow: "0 0 5px rgba(0,0,0,0.1)",
           }}
         />
       </FlexBetween>

@@ -26,7 +26,7 @@ const HomePage = () => {
           flexBasis={isNonMobileScreens ? "26%" : undefined}
           sx={{
             position: isNonMobileScreens ? "sticky" : "static",
-            top: "80px", // Adjust for Navbar height
+            top: "60px", // Adjust for Navbar height
             alignSelf: "flex-start",
           }}
         >
@@ -49,7 +49,7 @@ const HomePage = () => {
             <Box
               sx={{
                 position: "sticky",
-                top: "80px", // Becomes sticky once it hits this point
+                top: "60px", // Becomes sticky once it hits this point
                 alignSelf: "flex-start",
                 mt: "1rem",
               }}
